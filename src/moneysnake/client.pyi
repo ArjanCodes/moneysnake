@@ -1,4 +1,5 @@
-from typing import Any, Protocol
+from dataclasses import dataclass
+from typing import Any
 
 JSONDict = dict[str, Any]
 JSONList = list[Any]
@@ -6,7 +7,8 @@ JSON = JSONDict | JSONList
 
 MB_URL: str
 
-class MBClient(Protocol):
+@dataclass
+class MBClient:
     admin_id: str
     token: str
     timeout: int = 20
