@@ -3,6 +3,8 @@ from typing import Any
 
 import requests
 
+__all__ = ["MBClient", "JSONDict", "JSONList", "JSON", "MB_URL"]
+
 JSONDict = dict[str, Any]
 JSONList = list[Any]
 JSON = JSONDict | JSONList
