@@ -3,9 +3,9 @@ from typing import Any
 
 import requests
 
-type JSONDict = dict[str, Any]
-type JSONList = list[Any]
-type JSON = JSONDict | JSONList
+JSONDict = dict[str, Any]
+JSONList = list[Any]
+JSON = JSONDict | JSONList
 
 MB_URL = "https://moneybird.com/api/v2"
 
