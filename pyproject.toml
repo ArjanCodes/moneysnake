@@ -1,36 +1,16 @@
-[project]
+[tool.poetry]
 name = "moneysnake"
-description = "Python SDK for the Moneybird accounting platform."
+version = "0.0.1"
+description = "Moneybird SDK for Python"
+authors = ["ArjanCodes"]
+license = "MIT"
 readme = "README.md"
-authors = [
-    {name = "ArjanCodes", email = "hi@arjancodes.com"},
-]
 
-license.text = "MIT License"
+[tool.poetry.dependencies]
+requests = "^2.32.3"
 
-classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-]
-
-requires-python = ">= 3.11"
-
-dependencies = [
-    "requests",
-]
-
-dynamic = ["version"]
-
-[project.urls]
-"Source code" = "https://github.com/arjancodes/moneysnake"
-"Issue tracker" = "https://github.com/arjancodes/moneysnake/issues"
-
-[tool.setuptools.dynamic]
-version.attr = "moneysnake.__version__"
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
