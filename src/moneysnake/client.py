@@ -7,7 +7,7 @@ JSONDict = dict[str, Any]
 JSONList = list[Any]
 JSON = JSONDict | JSONList
 
-MB_URL = "https://moneybird.com/api/v2"
+MB_URL = "https://moneybird.com/api/"
 
 
 @dataclass
@@ -15,6 +15,7 @@ class MBClient:
     admin_id: str
     token: str
     timeout: int = 20
+    version: str = "v2"
 
     def get_custom_field_value(self, obj: JSONDict, field_id: int) -> str | None:
         for field in obj["custom_fields"]:
@@ -29,7 +30,7 @@ class MBClient:
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
-        fullpath = f"{MB_URL}/{self.admin_id}/{path}"
+        fullpath = f"{MB_URL}/{self.version}/{self.admin_id}/{path}"
         response = requests.request(
             method, fullpath, json=data, headers=headers, timeout=self.timeout
         )
