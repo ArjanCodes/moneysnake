@@ -1,21 +1,13 @@
-from dataclasses import dataclass
 from typing import Any
 
-JSONDict = dict[str, Any]
-JSONList = list[Any]
-JSON = JSONDict | JSONList
-
 MB_URL: str
+MB_VERSION_ID: str
 
-@dataclass
-class MBClient:
-    admin_id: str
-    token: str
-    timeout: int = 20
+admin_id: str
+token: str
+timeout: int
 
-    def get_custom_field_value(self, obj: JSONDict, field_id: int) -> str | None: ...
-    def post_request(
-        self, path: str, data: dict[str, Any] | None = None, method: str = "post"
-    ) -> JSON: ...
-
-def get_custom_field_value(obj: JSONDict, field_id: int) -> str | None: ...
+def get_custom_field_value(obj: dict[str, Any], field_id: int) -> str | None: ...
+def post_request(
+    path: str, data: dict[str, Any] | None = None, method: str = "post"
+) -> dict[str, Any]: ...
