@@ -31,4 +31,5 @@ def post_request(
     )
     response.raise_for_status()
 
-    return response.json()
+    # return json if there is content
+    return response.json() if response.content else {}

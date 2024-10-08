@@ -6,15 +6,18 @@ from httpx import HTTPStatusError
 init_mb_client(
     admin_id=375843955958351376, token="-cnqGW5QndzNDbl0uU2ORS6Iy7cDZ_nU4B6MaTZ5350"
 )
+id = 434317738549184093
 
-# read contact by id
-contact = Contact.read(434289804752979530)
-print(contact)
+# # create a contact
+# contact = Contact(company_name="Test Company", firstname="John", lastname="Doedoedoe")
+# contact.save()
 
-# update the city for testing
-contact.city = "Lelystad"
+# print(contact)
+
+# delete a contact
 try:
-    contact.save()
-    print(contact)
+    result = Contact.delete_by_id(id)
+    print(f"Contact with id {id} deleted.")
+    print(result)
 except HTTPStatusError as e:
-    print(e.response.json())
+    print(e)
