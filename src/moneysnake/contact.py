@@ -61,38 +61,6 @@ class Contact(BaseModel):
                 return
         self.custom_fields.append(CustomField(id=field_id, value=value))
 
-    @staticmethod
-    def from_dict(data: dict[str, Any]) -> "Contact":
-        return Contact(**data)
-
-    def update(self, data: dict[str, Any]) -> None:
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def delete(self) -> "Contact":
-        if not self.id:
-            raise ValueError("Contact has no id.")
-        post_request(f"contacts/{self.id}", method="delete")
-        # remove the id from the object
-        self.id = None
-        return self
-
-    @staticmethod
-    def find_by_id(contact_id: int) -> "Contact":
-        data = post_request(f"contacts/{contact_id}", method="get")
-        return Contact.from_dict(data)
-
-    @staticmethod
-    def find_by_customer_id(customer_id: str) -> "Contact":
-        data = post_request(f"contacts/customer_id/{customer_id}", method="get")
-        return Contact.from_dict(data)
-
-    @staticmethod
-    def delete_by_id(contact_id: int) -> "Contact":
-        contact = Contact.find_by_id(contact_id)
-        return contact.delete()
-
     def save(self) -> None:
         if self.id is None:
             data = post_request(
@@ -107,3 +75,42 @@ class Contact(BaseModel):
                 method="patch",
             )
             self.update(data)
+
+    def update(self, data: dict[str, Any]) -> None:
+        for key, value in data.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+    def delete(self) -> None:
+        if not self.id:
+            raise ValueError("Contact has no id.")
+        post_request(f"contacts/{self.id}", method="delete")
+        # remove the id from the object
+        self.id = None
+
+    @staticmethod
+    def find_by_id(contact_id: int) -> "Contact":
+        data = post_request(f"contacts/{contact_id}", method="get")
+        return Contact.from_dict(data)
+
+    @staticmethod
+    def find_by_customer_id(customer_id: str) -> "Contact":
+        data = post_request(f"contacts/customer_id/{customer_id}", method="get")
+        return Contact.from_dict(data)
+
+    @staticmethod
+    def update_by_id(contact_id: int, data: dict[str, Any]) -> "Contact":
+        contact = Contact.find_by_id(contact_id)
+        contact.update(data)
+        contact.save()
+        return contact
+
+    @staticmethod
+    def delete_by_id(contact_id: int) -> "Contact":
+        contact = Contact.find_by_id(contact_id)
+        contact.delete()
+        return contact
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> "Contact":
+        return Contact(**data)
