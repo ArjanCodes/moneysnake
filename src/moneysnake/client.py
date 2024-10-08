@@ -1,6 +1,6 @@
 from typing import Any
 
-import requests
+import httpx
 
 MB_URL = "https://moneybird.com/api/"
 MB_VERSION_ID = "v2"
@@ -26,18 +26,9 @@ def post_request(
         "Content-Type": "application/json",
     }
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id}/{path}"
-    response = requests.request(
+    response = httpx.request(
         method, fullpath, json=data, headers=headers, timeout=timeout
     )
-    if response.status_code >= 400:
-        raise requests.exceptions.HTTPError(
-            f"Error: {response.status_code} {response.text}"
-        )
-    if (
-        "application/json" not in response.headers.get("Content-Type", "")
-        or not response.text
-    ):
-        raise requests.exceptions.HTTPError(
-            f"Error: {response.status_code} {response.text}"
-        )
+    response.raise_for_status()
+
     return response.json()

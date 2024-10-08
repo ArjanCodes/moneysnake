@@ -90,6 +90,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --sync --no-interaction
 
+      - name: Run stub generation
+        run: poetry run stubgen src/ -o src
+
       - name: Build source and wheel distribution
         run: |
           poetry build
