@@ -91,7 +91,7 @@ jobs:
         run: poetry install --sync --no-interaction
 
       - name: Run stub generation
-        run: poetry run stubgen monesnake/ -o moneysnake
+        run: poetry run stubgen ${{ env.PACKAGE_NAME }}/ -o ${{ env.PACKAGE_NAME }}
 
       - name: Build source and wheel distribution
         run: |
