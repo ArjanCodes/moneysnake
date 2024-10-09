@@ -1,7 +1,8 @@
 from typing import Optional
 
-from model import MoneybirdModel
 from pydantic import BaseModel
+
+from .model import MoneybirdModel
 
 
 class CustomField(BaseModel):

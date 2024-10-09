@@ -1,8 +1,9 @@
 from typing import Optional
 
-from client import post_request
-from custom_field_model import CustomFieldModel
 from pydantic import BaseModel
+
+from .client import post_request
+from .custom_field_model import CustomFieldModel
 
 
 class ContactPerson(BaseModel):

@@ -1,7 +1,8 @@
 from typing import Any, Optional, Self
 
-from client import post_request
 from pydantic import BaseModel
+
+from .client import post_request
 
 
 def to_endpoint(class_name: str) -> str:
