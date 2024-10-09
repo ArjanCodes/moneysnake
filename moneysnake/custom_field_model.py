@@ -1,11 +1,11 @@
+from dataclasses import dataclass
 from typing import Optional
-
-from pydantic import BaseModel
 
 from .model import MoneybirdModel
 
 
-class CustomField(BaseModel):
+@dataclass
+class CustomField:
     id: Optional[int] = None
     value: Optional[str] = None
 

@@ -1,16 +1,17 @@
+from dataclasses import dataclass
 from typing import Optional
-
-from pydantic import BaseModel
 
 from .client import post_request
 from .custom_field_model import CustomFieldModel
 
 
-class ContactPerson(BaseModel):
+@dataclass
+class ContactPerson:
     firstname: Optional[str] = None
     lastname: Optional[str] = None
 
 
+@dataclass
 class Contact(CustomFieldModel):
     company_name: Optional[str] = None
     address1: Optional[str] = None
