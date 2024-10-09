@@ -1,7 +1,7 @@
-from typing import Any, Optional
+from typing import Optional
 
 from client import post_request
-from custom_field import CustomField
+from custom_field_model import CustomFieldModel
 from pydantic import BaseModel
 
 
@@ -10,8 +10,7 @@ class ContactPerson(BaseModel):
     lastname: Optional[str] = None
 
 
-class Contact(BaseModel):
-    id: Optional[int] = None
+class Contact(CustomFieldModel):
     company_name: Optional[str] = None
     address1: Optional[str] = None
     address2: Optional[str] = None
@@ -44,73 +43,10 @@ class Contact(BaseModel):
     email_ubl: bool = False
     direct_debit: bool = False
     contact_person: Optional[ContactPerson] = None
-    custom_fields: list[CustomField] = []
     type: Optional[str] = None
     from_checkout: bool = False
-
-    def get_custom_field(self, field_id: int) -> str | None:
-        for field in self.custom_fields:
-            if field.id == field_id:
-                return field.value
-        return None
-
-    def set_custom_field(self, field_id: int, value: str) -> None:
-        for field in self.custom_fields:
-            if field.id == field_id:
-                field.value = value
-                return
-        self.custom_fields.append(CustomField(id=field_id, value=value))
-
-    def save(self) -> None:
-        if self.id is None:
-            data = post_request(
-                "contacts", data={"contact": self.model_dump()}, method="post"
-            )
-            # update the current object with the data
-            self.update(data)
-        else:
-            data = post_request(
-                f"contacts/{self.id}",
-                data={"contact": self.model_dump()},
-                method="patch",
-            )
-            self.update(data)
-
-    def update(self, data: dict[str, Any]) -> None:
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-
-    def delete(self) -> None:
-        if not self.id:
-            raise ValueError("Contact has no id.")
-        post_request(f"contacts/{self.id}", method="delete")
-        # remove the id from the object
-        self.id = None
-
-    @staticmethod
-    def find_by_id(contact_id: int) -> "Contact":
-        data = post_request(f"contacts/{contact_id}", method="get")
-        return Contact.from_dict(data)
 
     @staticmethod
     def find_by_customer_id(customer_id: str) -> "Contact":
         data = post_request(f"contacts/customer_id/{customer_id}", method="get")
         return Contact.from_dict(data)
-
-    @staticmethod
-    def update_by_id(contact_id: int, data: dict[str, Any]) -> "Contact":
-        contact = Contact.find_by_id(contact_id)
-        contact.update(data)
-        contact.save()
-        return contact
-
-    @staticmethod
-    def delete_by_id(contact_id: int) -> "Contact":
-        contact = Contact.find_by_id(contact_id)
-        contact.delete()
-        return contact
-
-    @staticmethod
-    def from_dict(data: dict[str, Any]) -> "Contact":
-        return Contact(**data)

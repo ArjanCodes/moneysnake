@@ -11,10 +11,18 @@ token_ = ""
 timeout_ = 20
 
 
-def init_mb_client(admin_id: int, token: str, timeout: int = 20) -> None:
-    global admin_id_, token_, timeout_
+def set_admin_id(admin_id: int) -> None:
+    global admin_id_
     admin_id_ = admin_id
+
+
+def set_token(token: str) -> None:
+    global token_
     token_ = token
+
+
+def set_timeout(timeout: int) -> None:
+    global timeout_
     timeout_ = timeout
 
 
