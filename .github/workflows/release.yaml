@@ -91,10 +91,7 @@ jobs:
         run: poetry install --sync --no-interaction
 
       - name: Run stub generation
-        run: poetry run stubgen src/ -o src
-
-      - name: Show generated stubs in all subfolders
-        run: find src -name '*.pyi'
+        run: poetry run stubgen monesnake/ -o moneysnake
 
       - name: Build source and wheel distribution
         run: |

@@ -6,3 +6,14 @@ from .client import set_timeout as set_timeout
 from .client import set_token as set_token
 from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
+
+__all__ = [
+    "MB_URL",
+    "MB_VERSION_ID",
+    "post_request",
+    "set_admin_id",
+    "set_timeout",
+    "set_token",
+    "Contact",
+    "ContactPerson",
+]
