@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Optional, Self
+import inspect
 
 from .client import post_request
 
@@ -83,4 +84,6 @@ class MoneybirdModel:
 
     @classmethod
     def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
-        return cls(**data)
+        return cls(
+            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
+        )
