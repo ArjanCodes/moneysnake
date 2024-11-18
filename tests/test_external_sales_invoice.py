@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch
 from moneysnake.external_sales_invoice import ExternalSalesInvoice
+from pytest_mock import MockType
 
 
 @pytest.fixture(name="invoice_data")
@@ -152,35 +152,35 @@ def fixture_payment_data():
     }
 
 
-@patch("moneysnake.external_sales_invoice.post_request")
-def test_save_new_invoice(mock_post_request, invoice_data):
+def test_save_new_invoice(mocker: MockType, invoice_data):
     """
     Test saving a new external sales invoice.
     """
     # Remove id from invoice data
     del invoice_data["id"]
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
     mock_post_request.return_value = {"id": "433546255183906622", **invoice_data}
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.save()
     assert invoice.id == "433546255183906622"
 
 
-@patch("moneysnake.external_sales_invoice.post_request")
-def test_update_existing_invoice(mock_post_request, invoice_data):
+def test_update_existing_invoice(mocker: MockType, invoice_data):
     """
     Test updating an existing external sales invoice.
     """
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
     mock_post_request.return_value = invoice_data
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.save()
     assert invoice.id == "433546254874576683"
 
 
-@patch("moneysnake.external_sales_invoice.post_request")
-def test_create_payment(mock_post_request, invoice_data, payment_data):
+def test_create_payment(mocker: MockType, invoice_data, payment_data):
     """
     Test creating a payment for an external sales invoice.
     """
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
     mock_post_request.return_value = {"payment": payment_data}
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.id = 433546254874576683
@@ -189,12 +189,12 @@ def test_create_payment(mock_post_request, invoice_data, payment_data):
     assert payment.price == payment_data.get("price")
 
 
-@patch("moneysnake.external_sales_invoice.post_request")
-def test_update_by_id(mock_post_request, invoice_data):
+def test_update_by_id(mocker: MockType, invoice_data):
     """
     Test updating an external sales invoice by ID.
     """
-    mock_post_request.return_value = {"id": 433546254874576683, **invoice_data}
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
+    mock_post_request.return_value = {**invoice_data, "date": "2024-09-29"}
     updated_data = {"date": "2024-09-29"}
     invoice = ExternalSalesInvoice.update_by_id(433546254874576683, updated_data)
     assert invoice.date == "2024-09-29"
