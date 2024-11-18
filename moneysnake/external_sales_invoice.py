@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import inspect
 from typing import Any, Optional, List, Self
 
 from .model import MoneybirdModel
@@ -11,14 +12,20 @@ class ExternalSalesInvoiceDetailsAttributes:
     Details attributes for an external sales invoice.
     """
 
-    id: int
-    description: str
-    period: str
-    price: int
-    amount: int
-    tax_rate_id: int
-    ledger_account_id: str
-    project_id: str
+    id: Optional[int] = None
+    description: Optional[str] = None
+    period: Optional[str] = None
+    price: Optional[int] = None
+    amount: Optional[int] = None
+    tax_rate_id: Optional[int] = None
+    ledger_account_id: Optional[str] = None
+    project_id: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
+        return cls(
+            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
+        )
 
 
 @dataclass
@@ -27,15 +34,21 @@ class ExternalSalesInvoicePayment:
     Represents a payment on an external sales invoice.
     """
 
-    payment_date: str
-    price: float
-    price_base: float
-    financial_account_id: int
-    financial_mutation_id: int
-    manual_payment_action: str = "bank_transfer"
+    payment_date: Optional[str] = None
+    price: Optional[float] = None
+    price_base: Optional[float] = None
+    financial_account_id: Optional[int] = None
+    financial_mutation_id: Optional[int] = None
+    manual_payment_action: Optional[str] = "bank_transfer"
     transaction_identifier: Optional[str] = None
     ledger_account_id: Optional[int] = None
     invoice_id: Optional[int] = None
+
+    @classmethod
+    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
+        return cls(
+            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
+        )
 
 
 # External sales invoices don't have custom fields, so we use MoneybirdModel
@@ -97,7 +110,7 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         data = post_request(
             path=f"{self.endpoint}s/{self.id}/payments",
-            data={"payment": payment.__dict__},
+            data={"payment": payment},
         )
 
-        return ExternalSalesInvoicePayment(**data["payment"])
+        return ExternalSalesInvoicePayment.from_dict(data["payment"])
