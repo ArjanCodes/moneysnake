@@ -1,5 +1,8 @@
 import pytest
-from moneysnake.external_sales_invoice import ExternalSalesInvoice
+from moneysnake.external_sales_invoice import (
+    ExternalSalesInvoice,
+    ExternalSalesInvoicePayment,
+)
 from pytest_mock import MockType
 
 
@@ -184,7 +187,9 @@ def test_create_payment(mocker: MockType, invoice_data, payment_data):
     mock_post_request.return_value = {"payment": payment_data}
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.id = 433546254874576683
-    payment = invoice.create_payment(payment_data)
+    payment = invoice.create_payment(
+        ExternalSalesInvoicePayment.from_dict(payment_data)
+    )
 
     assert payment.price == payment_data.get("price")
 
