@@ -10,7 +10,7 @@ def fixture_custom_field_model():
     return CustomFieldModel()
 
 
-def test_get_custom_field_existing(custom_field_model):
+def test_get_custom_field_existing(custom_field_model: CustomFieldModel):
     """
     Test get_custom_field method with existing custom field
     """
@@ -18,7 +18,7 @@ def test_get_custom_field_existing(custom_field_model):
     assert custom_field_model.get_custom_field(1) == "test_value"
 
 
-def test_get_custom_field_non_existing(custom_field_model):
+def test_get_custom_field_non_existing(custom_field_model: CustomFieldModel):
     """
     Test get_custom_field method with non-existing custom field
     """
@@ -26,7 +26,7 @@ def test_get_custom_field_non_existing(custom_field_model):
     assert custom_field_model.get_custom_field(2) is None
 
 
-def test_set_custom_field_existing(custom_field_model):
+def test_set_custom_field_existing(custom_field_model: CustomFieldModel):
     """
     Test set_custom_field method with existing custom field
     """
@@ -35,7 +35,7 @@ def test_set_custom_field_existing(custom_field_model):
     assert custom_field_model.get_custom_field(1) == "new_value"
 
 
-def test_set_custom_field_new(custom_field_model):
+def test_set_custom_field_new(custom_field_model: CustomFieldModel):
     """
     Test set_custom_field method with new custom field
     """

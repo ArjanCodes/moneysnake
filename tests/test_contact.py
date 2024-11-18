@@ -1,10 +1,22 @@
 import pytest
-from unittest.mock import patch
+from pytest_mock import MockType
 from moneysnake.contact import Contact
+
+type ContactData = dict[
+    str,
+    str
+    | int
+    | bool
+    | None
+    | list[
+        dict[str, str | int | bool | None | dict[str, str]]
+        | dict[str, str | int | bool | None]
+    ],
+]
 
 
 @pytest.fixture(name="contact_data")
-def fixture_contact_data():
+def fixture_contact_data() -> ContactData:
     """
     Fixture for Moneybird contact data
     """
@@ -88,12 +100,11 @@ def fixture_contact_data():
     }
 
 
-@patch("moneysnake.contact.post_request")
-def test_find_by_customer_id(mock_post_request, contact_data):
+def test_find_by_customer_id(mocker: MockType, contact_data: ContactData):
     """
     Test that Contact.find_by_customer_id returns a Contact object with the correct data
     """
-    mock_post_request.return_value = contact_data
+    mocker.patch("moneysnake.contact.post_request", return_value=contact_data)
     customer_id = "1"
     contact = Contact.find_by_customer_id(customer_id)
 
