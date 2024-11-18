@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import inspect
 from typing import Any, Optional, List, Self
 
@@ -67,8 +67,28 @@ class ExternalSalesInvoice(MoneybirdModel):
     prices_are_incl_tax: Optional[bool] = None
     source: Optional[str] = None
     source_url: Optional[str] = None
-    details: Optional[List[ExternalSalesInvoiceDetailsAttributes]] = None
-    payments: Optional[List[ExternalSalesInvoicePayment]] = None
+    details: Optional[List[ExternalSalesInvoiceDetailsAttributes]] = field(
+        default_factory=list
+    )
+    payments: Optional[List[ExternalSalesInvoicePayment]] = field(default_factory=list)
+
+    def update(self, data: dict[str, Any]) -> None:
+        super().update(data)
+        # Construct the details and payments list of subclasses from the data.
+        if isinstance(self.details, list):
+            self.details = [
+                ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
+                if isinstance(detail, dict)
+                else detail
+                for detail in self.details
+            ]
+        if isinstance(self.payments, list):
+            self.payments = [
+                ExternalSalesInvoicePayment.from_dict(payment)
+                if isinstance(payment, dict)
+                else payment
+                for payment in self.payments
+            ]
 
     def save(self) -> None:
         """
@@ -94,13 +114,35 @@ class ExternalSalesInvoice(MoneybirdModel):
             )
             self.update(data)
 
-    def update(self, data: dict[str, Any]) -> None:
+    def list_all_by_contact_id(
+        self,
+        contact_id: int,
+        state: Optional[str] = "all",
+        period: Optional[str] = "this_year",
+    ) -> List:
         """
-        Update the external sales invoice with the given data.
+        List all external sales invoices for a contact.
         """
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        data = post_request(
+            path=f"{self.endpoint}s/?filter=contact_id:{contact_id}&state:{state}&period:{period}",
+            method="get",
+        )
+
+        invoices = []
+        for invoice in data:
+            invoice_obj = ExternalSalesInvoice.from_dict(invoice)
+            if "details" in invoice:
+                invoice_obj.details = [
+                    ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
+                    for detail in invoice["details"]
+                ]
+            if "payments" in invoice:
+                invoice_obj.payments = [
+                    ExternalSalesInvoicePayment.from_dict(payment)
+                    for payment in invoice["payments"]
+                ]
+            invoices.append(invoice_obj)
+        return invoices
 
     def create_payment(
         self, payment: ExternalSalesInvoicePayment
