@@ -75,6 +75,8 @@ class ExternalSalesInvoice(MoneybirdModel):
         Save the external sales invoice. Overrides the save method in MoneybirdModel.
         """
         invoice_data = self.to_dict()
+        # For the POST and PATCH requests we need to use the details_attributes key
+        # instead of details key to match the Moneybird API.
         invoice_data["details_attributes"] = invoice_data.pop("details", [])
 
         if self.id is None:
@@ -97,8 +99,6 @@ class ExternalSalesInvoice(MoneybirdModel):
         Update the external sales invoice with the given data.
         """
         for key, value in data.items():
-            if key == "details":
-                key = "details_attributes"
             if hasattr(self, key):
                 setattr(self, key, value)
 
