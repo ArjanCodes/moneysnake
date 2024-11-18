@@ -44,6 +44,18 @@ class ExternalSalesInvoicePayment:
     ledger_account_id: Optional[int] = None
     invoice_id: Optional[int] = None
 
+    def to_dict(self, exclude_none: bool = False) -> dict[str, Any]:
+        def convert_value(value: Any) -> Any:
+            if isinstance(value, MoneybirdModel):
+                return value.to_dict()
+            return value
+
+        return {
+            key: convert_value(value)
+            for key, value in self.__dict__.items()
+            if not (exclude_none and value is None)
+        }
+
     @classmethod
     def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
         return cls(
@@ -73,22 +85,20 @@ class ExternalSalesInvoice(MoneybirdModel):
     payments: Optional[List[ExternalSalesInvoicePayment]] = field(default_factory=list)
 
     def update(self, data: dict[str, Any]) -> None:
+        """
+        Update the external sales invoice. Overrides the update method in MoneybirdModel.
+        """
         super().update(data)
-        # Construct the details and payments list of subclasses from the data.
-        if isinstance(self.details, list):
-            self.details = [
-                ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
-                if isinstance(detail, dict)
-                else detail
-                for detail in self.details
-            ]
-        if isinstance(self.payments, list):
-            self.payments = [
-                ExternalSalesInvoicePayment.from_dict(payment)
-                if isinstance(payment, dict)
-                else payment
-                for payment in self.payments
-            ]
+        self.details = [
+            ExternalSalesInvoiceDetailsAttributes.from_dict(d)
+            if isinstance(d, dict)
+            else d
+            for d in self.details
+        ]
+        self.payments = [
+            ExternalSalesInvoicePayment.from_dict(p) if isinstance(p, dict) else p
+            for p in self.payments
+        ]
 
     def save(self) -> None:
         """
@@ -152,7 +162,7 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         data = post_request(
             path=f"{self.endpoint}s/{self.id}/payments",
-            data={"payment": payment},
+            data={"payment": payment.to_dict()},
         )
 
         return ExternalSalesInvoicePayment.from_dict(data["payment"])
