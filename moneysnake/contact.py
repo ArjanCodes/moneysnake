@@ -50,5 +50,8 @@ class Contact(CustomFieldModel):
 
     @staticmethod
     def find_by_customer_id(customer_id: str) -> "Contact":
+        """
+        Find a contact by customer_id
+        """
         data = post_request(f"contacts/customer_id/{customer_id}", method="get")
         return Contact.from_dict(data)
