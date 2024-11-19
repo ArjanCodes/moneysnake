@@ -6,6 +6,10 @@ from .client import set_timeout as set_timeout
 from .client import set_token as set_token
 from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
+from .external_sales_invoice import ExternalSalesInvoice as ExternalSalesInvoice
+from .external_sales_invoice import (
+    ExternalSalesInvoicePayment as ExternalSalesInvoicePayment,
+)
 
 __all__ = [
     "MB_URL",
@@ -16,4 +20,6 @@ __all__ = [
     "set_token",
     "Contact",
     "ContactPerson",
+    "ExternalSalesInvoice",
+    "ExternalSalesInvoicePayment",
 ]
