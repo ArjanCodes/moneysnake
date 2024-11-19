@@ -120,7 +120,7 @@ class ExternalSalesInvoice(MoneybirdModel):
             invoices.append(invoice_obj)
         return invoices
 
-    def create_payment(self, payment: Payment) -> Payment:
+    def create_payment(self, payment: Payment) -> None:
         """
         Create a payment for the external sales invoice.
         """
@@ -128,5 +128,20 @@ class ExternalSalesInvoice(MoneybirdModel):
             path=f"{self.endpoint}s/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
+        # Get the payment data from the response and append it to the payments list
+        payment_data = data.get("payment")
+        if payment_data:
+            self.payments.append(Payment.from_dict(payment_data))
 
-        return Payment.from_dict(data["payment"])
+    def delete_payment(self, payment_id: int) -> None:
+        """
+        Delete a payment for the external sales invoice.
+        """
+        post_request(
+            path=f"{self.endpoint}s/{self.id}/payments/{payment_id}",
+            method="delete",
+        )
+
+        self.payments = [
+            payment for payment in self.payments if payment.id != payment_id
+        ]

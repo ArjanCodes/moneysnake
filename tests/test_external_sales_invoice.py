@@ -185,11 +185,37 @@ def test_create_payment(mocker: MockType, invoice_data, payment_data):
     mock_post_request.return_value = {"payment": payment_data}
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.id = 433546254874576683
-    payment = invoice.create_payment(
-        ExternalSalesInvoicePayment.from_dict(payment_data)
-    )
+    invoice.create_payment(ExternalSalesInvoicePayment.from_dict(payment_data))
 
-    assert payment.price == 121.0
+    assert len(invoice.payments) == 1
+
+
+def test_delete_payment(mocker: MockType, invoice_data, payment_data):
+    """
+    Test deleting a payment for an external sales invoice.
+    """
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
+    mock_post_request.return_value = {"payment": payment_data}
+    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    invoice.id = 433546254874576683
+    invoice.create_payment(ExternalSalesInvoicePayment.from_dict(payment_data))
+
+    assert len(invoice.payments) == 1
+
+    mock_post_request.return_value = None
+    invoice.delete_payment(433546259519768528)
+
+    assert len(invoice.payments) == 0
+
+
+def test_list_all_by_contact_id(mocker: MockType, invoice_data):
+    """
+    Test listing all external sales invoices for a contact.
+    """
+    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
+    mock_post_request.return_value = [invoice_data]
+    invoices = ExternalSalesInvoice().list_all_by_contact_id(433546254856750888)
+    assert len(invoices) == 1
 
 
 def test_update_by_id(mocker: MockType, invoice_data):
