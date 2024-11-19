@@ -1,7 +1,7 @@
 import pytest
+from pytest_mock import MockType
 from moneysnake.external_sales_invoice import ExternalSalesInvoice
 from moneysnake.payment import Payment as ExternalSalesInvoicePayment
-from pytest_mock import MockType
 
 
 @pytest.fixture(name="invoice_data")

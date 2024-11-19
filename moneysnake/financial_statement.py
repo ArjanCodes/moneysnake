@@ -20,11 +20,11 @@ class FinancialStatement(MoneybirdModel):
 
     def load(self, id: int) -> None:
         raise NotImplementedError(
-            "Financial statements cannot be loaded from Moneybird"
+            "Financial statements cannot be loaded from Moneybird."
         )
 
     @classmethod
     def find_by_id(cls: type[Self], id: int) -> Self:
         raise NotImplementedError(
-            "Financial statements cannot be loaded from Moneybird"
+            "Financial statements cannot be loaded from Moneybird."
         )
