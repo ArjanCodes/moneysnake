@@ -7,9 +7,7 @@ from .client import set_token as set_token
 from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
 from .external_sales_invoice import ExternalSalesInvoice as ExternalSalesInvoice
-from .external_sales_invoice import (
-    ExternalSalesInvoicePayment as ExternalSalesInvoicePayment,
-)
+from .payment import Payment as Payment
 
 __all__ = [
     "MB_URL",
@@ -21,5 +19,5 @@ __all__ = [
     "Contact",
     "ContactPerson",
     "ExternalSalesInvoice",
-    "ExternalSalesInvoicePayment",
+    "Payment",
 ]

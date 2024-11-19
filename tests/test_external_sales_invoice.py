@@ -1,8 +1,6 @@
 import pytest
-from moneysnake.external_sales_invoice import (
-    ExternalSalesInvoice,
-    ExternalSalesInvoicePayment,
-)
+from moneysnake.external_sales_invoice import ExternalSalesInvoice
+from moneysnake.payment import Payment as ExternalSalesInvoicePayment
 from pytest_mock import MockType
 
 
