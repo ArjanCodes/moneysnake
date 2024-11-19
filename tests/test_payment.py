@@ -28,10 +28,11 @@ def fixture_payment_data():
 
 
 def test_payment(payment_data: dict, mocker: MockType):
-
     payment = Payment.from_dict(payment_data)
 
     assert payment.payment_date == "2024-09-30"
+    assert payment.price == 363.0
+    assert isinstance(payment.price, float)
 
     with pytest.raises(NotImplementedError):
         payment.save()

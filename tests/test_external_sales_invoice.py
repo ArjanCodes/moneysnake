@@ -160,10 +160,10 @@ def test_save_new_invoice(mocker: MockType, invoice_data):
     # Remove id from invoice data
     del invoice_data["id"]
     mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = {"id": "433546255183906622", **invoice_data}
+    mock_post_request.return_value = {"id": 433546255183906622, **invoice_data}
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.save()
-    assert invoice.id == "433546255183906622"
+    assert invoice.id == 433546255183906622
 
 
 def test_update_existing_invoice(mocker: MockType, invoice_data):
@@ -174,7 +174,7 @@ def test_update_existing_invoice(mocker: MockType, invoice_data):
     mock_post_request.return_value = invoice_data
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.save()
-    assert invoice.id == "433546254874576683"
+    assert invoice.id == 433546254874576683
 
 
 def test_create_payment(mocker: MockType, invoice_data, payment_data):
