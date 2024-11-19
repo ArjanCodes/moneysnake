@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, Union, get_origin, get_args
 import inspect
 
 from .client import post_request
@@ -58,7 +58,7 @@ class MoneybirdModel:
 
     def delete(self) -> None:
         if not self.id:
-            raise ValueError("Contact has no id.")
+            raise ValueError(f"Cannot delete {self.__class__.__name__} without an id")
         post_request(f"{self.endpoint}s/{self.id}", method="delete")
         # remove the id from the object
         self.id = None
@@ -83,7 +83,48 @@ class MoneybirdModel:
         return entity
 
     @classmethod
+    def _get_param_type(cls, param_type: Any) -> Any:
+        """
+        Resolve the actual type of a parameter, handling Optionals and Unions.
+        """
+        if param_type is not inspect.Parameter.empty:
+            origin = get_origin(param_type)
+            args = get_args(param_type)
+            if origin is Union and type(None) in args:
+                return next(arg for arg in args if arg is not type(None))
+        return param_type
+
+    @classmethod
+    def _convert_value(cls, value: Any, param_type: Any) -> Any:
+        """
+        Attempt to convert a value to the given parameter type.
+        """
+        if value is not None:
+            try:
+                return param_type(value)
+            except (ValueError, TypeError):
+                pass
+        return value
+
+    @classmethod
+    def _filter_params(
+        cls, data: dict[str, Any], params: inspect.Signature
+    ) -> dict[str, Any]:
+        """
+        Filter and convert input data based on class parameters.
+        """
+        filtered_data = {}
+        for key, value in data.items():
+            if key in params:
+                param_type = cls._get_param_type(params[key].annotation)
+                filtered_data[key] = cls._convert_value(value, param_type)
+        return filtered_data
+
+    @classmethod
     def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
-        return cls(
-            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
-        )
+        """
+        Create an instance of the class from a dictionary, performing type conversion.
+        """
+        params = inspect.signature(cls).parameters
+        filtered_data = cls._filter_params(data, params)
+        return cls(**{k: v for k, v in filtered_data.items() if k in params})

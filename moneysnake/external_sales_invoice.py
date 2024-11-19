@@ -4,6 +4,7 @@ from typing import Any, Optional, List, Self
 
 from .model import MoneybirdModel
 from .client import post_request
+from .payment import Payment
 
 
 @dataclass
@@ -20,41 +21,6 @@ class ExternalSalesInvoiceDetailsAttributes:
     tax_rate_id: Optional[int] = None
     ledger_account_id: Optional[str] = None
     project_id: Optional[str] = None
-
-    @classmethod
-    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
-        return cls(
-            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
-        )
-
-
-@dataclass
-class ExternalSalesInvoicePayment:
-    """
-    Represents a payment on an external sales invoice.
-    """
-
-    payment_date: Optional[str] = None
-    price: Optional[float] = None
-    price_base: Optional[float] = None
-    financial_account_id: Optional[int] = None
-    financial_mutation_id: Optional[int] = None
-    manual_payment_action: Optional[str] = "bank_transfer"
-    transaction_identifier: Optional[str] = None
-    ledger_account_id: Optional[int] = None
-    invoice_id: Optional[int] = None
-
-    def to_dict(self, exclude_none: bool = False) -> dict[str, Any]:
-        def convert_value(value: Any) -> Any:
-            if isinstance(value, MoneybirdModel):
-                return value.to_dict()
-            return value
-
-        return {
-            key: convert_value(value)
-            for key, value in self.__dict__.items()
-            if not (exclude_none and value is None)
-        }
 
     @classmethod
     def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
@@ -82,7 +48,7 @@ class ExternalSalesInvoice(MoneybirdModel):
     details: Optional[List[ExternalSalesInvoiceDetailsAttributes]] = field(
         default_factory=list
     )
-    payments: Optional[List[ExternalSalesInvoicePayment]] = field(default_factory=list)
+    payments: Optional[List[Payment]] = field(default_factory=list)
 
     def update(self, data: dict[str, Any]) -> None:
         """
@@ -90,14 +56,15 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         super().update(data)
         self.details = [
-            ExternalSalesInvoiceDetailsAttributes.from_dict(d)
-            if isinstance(d, dict)
-            else d
+            (
+                ExternalSalesInvoiceDetailsAttributes.from_dict(d)
+                if isinstance(d, dict)
+                else d
+            )
             for d in self.details
         ]
         self.payments = [
-            ExternalSalesInvoicePayment.from_dict(p) if isinstance(p, dict) else p
-            for p in self.payments
+            Payment.from_dict(p) if isinstance(p, dict) else p for p in self.payments
         ]
 
     def save(self) -> None:
@@ -148,15 +115,12 @@ class ExternalSalesInvoice(MoneybirdModel):
                 ]
             if "payments" in invoice:
                 invoice_obj.payments = [
-                    ExternalSalesInvoicePayment.from_dict(payment)
-                    for payment in invoice["payments"]
+                    Payment.from_dict(payment) for payment in invoice["payments"]
                 ]
             invoices.append(invoice_obj)
         return invoices
 
-    def create_payment(
-        self, payment: ExternalSalesInvoicePayment
-    ) -> ExternalSalesInvoicePayment:
+    def create_payment(self, payment: Payment) -> None:
         """
         Create a payment for the external sales invoice.
         """
@@ -164,5 +128,20 @@ class ExternalSalesInvoice(MoneybirdModel):
             path=f"{self.endpoint}s/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
+        # Get the payment data from the response and append it to the payments list
+        payment_data = data.get("payment")
+        if payment_data:
+            self.payments.append(Payment.from_dict(payment_data))
 
-        return ExternalSalesInvoicePayment.from_dict(data["payment"])
+    def delete_payment(self, payment_id: int) -> None:
+        """
+        Delete a payment for the external sales invoice.
+        """
+        post_request(
+            path=f"{self.endpoint}s/{self.id}/payments/{payment_id}",
+            method="delete",
+        )
+
+        self.payments = [
+            payment for payment in self.payments if payment.id != payment_id
+        ]
