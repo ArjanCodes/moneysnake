@@ -58,7 +58,7 @@ class MoneybirdModel:
 
     def delete(self) -> None:
         if not self.id:
-            raise ValueError("Contact has no id.")
+            raise ValueError(f"Cannot delete {self.__class__.__name__} without an id")
         post_request(f"{self.endpoint}s/{self.id}", method="delete")
         # remove the id from the object
         self.id = None
@@ -91,7 +91,6 @@ class MoneybirdModel:
             origin = get_origin(param_type)
             args = get_args(param_type)
             if origin is Union and type(None) in args:
-                # Get the first non-None type
                 return next(arg for arg in args if arg is not type(None))
         return param_type
 
