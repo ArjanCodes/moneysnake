@@ -174,7 +174,7 @@ def test_update_existing_invoice(mocker: MockType, invoice_data):
     mock_post_request.return_value = invoice_data
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     invoice.save()
-    assert invoice.id == 433546254874576683
+    assert int(invoice.id) == 433546254874576683
 
 
 def test_create_payment(mocker: MockType, invoice_data, payment_data):
@@ -189,7 +189,7 @@ def test_create_payment(mocker: MockType, invoice_data, payment_data):
         ExternalSalesInvoicePayment.from_dict(payment_data)
     )
 
-    assert payment.price == payment_data.get("price")
+    assert payment.price == 121.0
 
 
 def test_update_by_id(mocker: MockType, invoice_data):

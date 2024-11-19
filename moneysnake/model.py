@@ -83,23 +83,49 @@ class MoneybirdModel:
         return entity
 
     @classmethod
-    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
-        params = inspect.signature(cls).parameters
+    def _get_param_type(cls, param_type: Any) -> Any:
+        """
+        Resolve the actual type of a parameter, handling Optionals and Unions.
+        """
+        if param_type is not inspect.Parameter.empty:
+            origin = get_origin(param_type)
+            args = get_args(param_type)
+            if origin is Union and type(None) in args:
+                # Get the first non-None type
+                return next(arg for arg in args if arg is not type(None))
+        return param_type
+
+    @classmethod
+    def _convert_value(cls, value: Any, param_type: Any) -> Any:
+        """
+        Attempt to convert a value to the given parameter type.
+        """
+        if value is not None:
+            try:
+                return param_type(value)
+            except (ValueError, TypeError):
+                pass
+        return value
+
+    @classmethod
+    def _filter_params(
+        cls, data: dict[str, Any], params: inspect.Signature
+    ) -> dict[str, Any]:
+        """
+        Filter and convert input data based on class parameters.
+        """
+        filtered_data = {}
         for key, value in data.items():
             if key in params:
-                param_type = params[key].annotation
-                # check if the parameter is optional
-                if param_type is not inspect.Parameter.empty:
-                    origin = get_origin(param_type)
-                    args = get_args(param_type)
-                    # check if the parameter is a Union with None
-                    if origin is Union and type(None) in args:
-                        # get the first non-None type
-                        param_type = next(arg for arg in args if arg is not type(None))
-                    try:
-                        # try to convert the value to the parameter type
-                        data[key] = param_type(value)
-                    except (ValueError, TypeError):
-                        pass
+                param_type = cls._get_param_type(params[key].annotation)
+                filtered_data[key] = cls._convert_value(value, param_type)
+        return filtered_data
 
-        return cls(**{k: v for k, v in data.items() if k in params})
+    @classmethod
+    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
+        """
+        Create an instance of the class from a dictionary, performing type conversion.
+        """
+        params = inspect.signature(cls).parameters
+        filtered_data = cls._filter_params(data, params)
+        return cls(**{k: v for k, v in filtered_data.items() if k in params})
