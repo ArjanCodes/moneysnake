@@ -8,6 +8,8 @@ from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
 from .external_sales_invoice import ExternalSalesInvoice as ExternalSalesInvoice
 from .payment import Payment as Payment
+from .financial_mutation import FinancialMutation as FinancialMutation
+from .financial_statement import FinancialStatement as FinancialStatement
 
 __all__ = [
     "MB_URL",
@@ -20,4 +22,6 @@ __all__ = [
     "ContactPerson",
     "ExternalSalesInvoice",
     "Payment",
+    "FinancialMutation",
+    "FinancialStatement",
 ]
