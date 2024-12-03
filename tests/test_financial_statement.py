@@ -75,7 +75,7 @@ def test_create_financial_statement(mocker: MockType, statement_data):
     Test creating a financial statement.
     """
     del statement_data["id"]
-    mock_post_request = mocker.patch("moneysnake.model.post_request")
+    mock_post_request = mocker.patch("moneysnake.financial_statement.post_request")
     mock_post_request.return_value = {"id": 433546265561662833, **statement_data}
     statement = FinancialStatement.from_dict(statement_data)
     statement.save()
