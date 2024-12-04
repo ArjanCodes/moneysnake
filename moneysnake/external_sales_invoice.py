@@ -8,9 +8,9 @@ from .payment import Payment
 
 
 @dataclass
-class ExternalSalesInvoiceDetailsAttributes:
+class ExternalSalesInvoiceDetailsAttribute:
     """
-    Details attributes for an external sales invoice.
+    Details attribute for an external sales invoice.
     """
 
     id: Optional[int] = None
@@ -45,7 +45,7 @@ class ExternalSalesInvoice(MoneybirdModel):
     prices_are_incl_tax: Optional[bool] = None
     source: Optional[str] = None
     source_url: Optional[str] = None
-    details: Optional[List[ExternalSalesInvoiceDetailsAttributes]] = field(
+    details: Optional[List[ExternalSalesInvoiceDetailsAttribute]] = field(
         default_factory=list
     )
     payments: Optional[List[Payment]] = field(default_factory=list)
@@ -82,46 +82,48 @@ class ExternalSalesInvoice(MoneybirdModel):
             )
         self.update(data)
 
-    def add_detail(self, detail: ExternalSalesInvoiceDetailsAttributes) -> None:
+    def add_detail(self, detail: ExternalSalesInvoiceDetailsAttribute) -> None:
         """
         Add a detail to the external sales invoice.
         """
-        if not isinstance(detail, ExternalSalesInvoiceDetailsAttributes):
-            # If the detail is not an instance of ExternalSalesInvoiceDetailsAttributes,
+        if not isinstance(detail, ExternalSalesInvoiceDetailsAttribute):
+            # If the detail is not an instance of ExternalSalesInvoiceDetailsAttribute,
             # Try to create one from the detail.
             try:
-                detail = ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
+                detail = ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
             except Exception as e:
                 raise ValueError(
-                    f"Invalid detail. {e}. Detail must be an instance of ExternalSalesInvoiceDetailsAttributes."
+                    f"Invalid detail. {e}. Detail must be an instance of ExternalSalesInvoiceDetailsAttribute."
                 ) from e
         self.details.append(detail)
 
-    def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttributes:
+    def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttribute:
         """
         Get a detail from the external sales invoice.
         """
         for detail in self.details:
-            if detail.id == detail_id:
-                return detail
+            if detail["id"] == detail_id:
+                return ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
         raise ValueError(f"Detail with id {detail_id} not found.")
 
     def update_detail(
-        self, detail_id: int, data: ExternalSalesInvoiceDetailsAttributes
-    ) -> None:
+        self, detail_id: int, data: ExternalSalesInvoiceDetailsAttribute
+    ) -> ExternalSalesInvoiceDetailsAttribute:
         """
         Update a detail from the external sales invoice.
         """
         detail = self.get_detail(detail_id)
-        for key, value in data.__dict__.items():
-            if hasattr(detail, key):
-                setattr(detail, key, value)
+        for key in data.__dataclass_fields__:
+            new_value = getattr(data, key)
+            if new_value is not None:
+                setattr(detail, key, new_value)
+        return detail
 
     def delete_detail(self, detail_id: int) -> None:
         """
         Delete a detail from the external sales invoice.
         """
-        self.details = [detail for detail in self.details if detail.id != detail_id]
+        self.details = [detail for detail in self.details if detail["id"] != detail_id]
 
     def list_all_by_contact_id(
         self,
@@ -142,7 +144,7 @@ class ExternalSalesInvoice(MoneybirdModel):
             invoice_obj = ExternalSalesInvoice.from_dict(invoice)
             if "details" in invoice:
                 invoice_obj.details = [
-                    ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
+                    ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
                     for detail in invoice["details"]
                 ]
             if "payments" in invoice:

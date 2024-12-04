@@ -1,6 +1,9 @@
 import pytest
 from pytest_mock import MockType
-from moneysnake.external_sales_invoice import ExternalSalesInvoice
+from moneysnake.external_sales_invoice import (
+    ExternalSalesInvoice,
+    ExternalSalesInvoiceDetailsAttribute,
+)
 from moneysnake.payment import Payment as ExternalSalesInvoicePayment
 
 
@@ -227,3 +230,50 @@ def test_update_by_id(mocker: MockType, invoice_data):
     updated_data = {"date": "2024-09-29"}
     invoice = ExternalSalesInvoice.update_by_id(433546254874576683, updated_data)
     assert invoice.date == "2024-09-29"
+
+
+def test_add_detail(invoice_data):
+    """
+    Test adding a detail to an external sales invoice.
+    """
+    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    detail_data = {
+        "id": 2,
+        "description": "New detail",
+        "price": 200,
+        "amount": 2,
+    }
+    detail = ExternalSalesInvoiceDetailsAttribute.from_dict(detail_data)
+    invoice.add_detail(detail)
+    assert len(invoice.details) == 2
+    assert invoice.details[-1].description == "New detail"
+
+
+def test_get_detail(invoice_data):
+    """
+    Test getting a detail from an external sales invoice.
+    """
+    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    detail = invoice.get_detail("433546254876673836")
+    assert detail.description == "Invoice detail description"
+
+
+def test_update_detail(invoice_data):
+    """
+    Test updating a detail from an external sales invoice.
+    """
+    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    updated_detail_data = ExternalSalesInvoiceDetailsAttribute(
+        description="Updated description"
+    )
+    detail = invoice.update_detail("433546254876673836", updated_detail_data)
+    assert detail.description == "Updated description"
+
+
+def test_delete_detail(invoice_data):
+    """
+    Test deleting a detail from an external sales invoice.
+    """
+    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    invoice.delete_detail("433546254876673836")
+    assert len(invoice.details) == 0
