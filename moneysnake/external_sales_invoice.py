@@ -55,14 +55,6 @@ class ExternalSalesInvoice(MoneybirdModel):
         Update the external sales invoice. Overrides the update method in MoneybirdModel.
         """
         super().update(data)
-        self.details = [
-            (
-                ExternalSalesInvoiceDetailsAttributes.from_dict(d)
-                if isinstance(d, dict)
-                else d
-            )
-            for d in self.details
-        ]
         self.payments = [
             Payment.from_dict(p) if isinstance(p, dict) else p for p in self.payments
         ]
@@ -82,14 +74,54 @@ class ExternalSalesInvoice(MoneybirdModel):
                 data={self.endpoint: invoice_data},
                 method="post",
             )
-            self.update(data)
         else:
             data = post_request(
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: invoice_data},
                 method="patch",
             )
-            self.update(data)
+        self.update(data)
+
+    def add_detail(self, detail: ExternalSalesInvoiceDetailsAttributes) -> None:
+        """
+        Add a detail to the external sales invoice.
+        """
+        if not isinstance(detail, ExternalSalesInvoiceDetailsAttributes):
+            # If the detail is not an instance of ExternalSalesInvoiceDetailsAttributes,
+            # Try to create one from the detail.
+            try:
+                detail = ExternalSalesInvoiceDetailsAttributes.from_dict(detail)
+            except Exception as e:
+                raise ValueError(
+                    f"Invalid detail. {e}. Detail must be an instance of ExternalSalesInvoiceDetailsAttributes."
+                ) from e
+        self.details.append(detail)
+
+    def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttributes:
+        """
+        Get a detail from the external sales invoice.
+        """
+        for detail in self.details:
+            if detail.id == detail_id:
+                return detail
+        raise ValueError(f"Detail with id {detail_id} not found.")
+
+    def update_detail(
+        self, detail_id: int, data: ExternalSalesInvoiceDetailsAttributes
+    ) -> None:
+        """
+        Update a detail from the external sales invoice.
+        """
+        detail = self.get_detail(detail_id)
+        for key, value in data.__dict__.items():
+            if hasattr(detail, key):
+                setattr(detail, key, value)
+
+    def delete_detail(self, detail_id: int) -> None:
+        """
+        Delete a detail from the external sales invoice.
+        """
+        self.details = [detail for detail in self.details if detail.id != detail_id]
 
     def list_all_by_contact_id(
         self,
