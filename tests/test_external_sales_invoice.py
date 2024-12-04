@@ -246,7 +246,7 @@ def test_add_detail(invoice_data):
     detail = ExternalSalesInvoiceDetailsAttribute.from_dict(detail_data)
     invoice.add_detail(detail)
     assert len(invoice.details) == 2
-    assert invoice.details[-1].description == "New detail"
+    assert invoice.details[-1]["description"] == "New detail"
 
 
 def test_get_detail(invoice_data):
@@ -255,7 +255,7 @@ def test_get_detail(invoice_data):
     """
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     detail = invoice.get_detail("433546254876673836")
-    assert detail.description == "Invoice detail description"
+    assert detail["description"] == "Invoice detail description"
 
 
 def test_update_detail(invoice_data):
@@ -265,9 +265,9 @@ def test_update_detail(invoice_data):
     invoice = ExternalSalesInvoice.from_dict(invoice_data)
     updated_detail_data = ExternalSalesInvoiceDetailsAttribute(
         description="Updated description"
-    )
+    ).to_dict(exclude_none=True)
     detail = invoice.update_detail("433546254876673836", updated_detail_data)
-    assert detail.description == "Updated description"
+    assert detail["description"] == "Updated description"
 
 
 def test_delete_detail(invoice_data):
