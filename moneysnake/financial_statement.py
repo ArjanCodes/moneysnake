@@ -36,14 +36,14 @@ class FinancialStatement(MoneybirdModel):
                 data={self.endpoint: financial_statement_data},
                 method="post",
             )
-            self.update(data)
+
         else:
             data = post_request(
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: financial_statement_data},
                 method="patch",
             )
-            self.update(data)
+        self.update(data)
 
     def load(self, id: int) -> None:
         raise NotImplementedError(
