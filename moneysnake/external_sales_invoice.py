@@ -22,6 +22,18 @@ class ExternalSalesInvoiceDetailsAttribute:
     ledger_account_id: Optional[str] = None
     project_id: Optional[str] = None
 
+    def to_dict(self, exclude_none: bool = False) -> dict[str, Any]:
+        def convert_value(value: Any) -> Any:
+            if isinstance(value, MoneybirdModel):
+                return value.to_dict()
+            return value
+
+        return {
+            key: convert_value(value)
+            for key, value in self.__dict__.items()
+            if not (exclude_none and value is None)
+        }
+
     @classmethod
     def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
         return cls(
@@ -95,28 +107,23 @@ class ExternalSalesInvoice(MoneybirdModel):
                 raise ValueError(
                     f"Invalid detail. {e}. Detail must be an instance of ExternalSalesInvoiceDetailsAttribute."
                 ) from e
-        self.details.append(detail)
+        self.details.append(detail.to_dict(exclude_none=True))
 
-    def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttribute:
+    def get_detail(self, detail_id: int) -> dict[str, Any]:
         """
         Get a detail from the external sales invoice.
         """
         for detail in self.details:
             if detail["id"] == detail_id:
-                return ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
+                return detail
         raise ValueError(f"Detail with id {detail_id} not found.")
 
-    def update_detail(
-        self, detail_id: int, data: ExternalSalesInvoiceDetailsAttribute
-    ) -> ExternalSalesInvoiceDetailsAttribute:
+    def update_detail(self, detail_id: int, data: dict[str, Any]) -> dict[str, Any]:
         """
         Update a detail from the external sales invoice.
         """
         detail = self.get_detail(detail_id)
-        for key in data.__dataclass_fields__:
-            new_value = getattr(data, key)
-            if new_value is not None:
-                setattr(detail, key, new_value)
+        detail.update(data)
         return detail
 
     def delete_detail(self, detail_id: int) -> None:
