@@ -7,6 +7,9 @@ from .client import set_token as set_token
 from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
 from .external_sales_invoice import ExternalSalesInvoice as ExternalSalesInvoice
+from .external_sales_invoice import (
+    ExternalSalesInvoiceDetailsAttribute as ExternalSalesInvoiceDetailsAttribute,
+)
 from .payment import Payment as Payment
 from .financial_mutation import FinancialMutation as FinancialMutation
 from .financial_statement import FinancialStatement as FinancialStatement
@@ -21,6 +24,7 @@ __all__ = [
     "Contact",
     "ContactPerson",
     "ExternalSalesInvoice",
+    "ExternalSalesInvoiceDetailsAttribute",
     "Payment",
     "FinancialMutation",
     "FinancialStatement",
