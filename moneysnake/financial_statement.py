@@ -1,4 +1,4 @@
-from typing import List, Optional, Self
+from typing import Any, List, Optional, Self
 from dataclasses import dataclass, field
 
 from .model import MoneybirdModel
@@ -48,6 +48,32 @@ class FinancialStatement(MoneybirdModel):
     def load(self, id: int) -> None:
         raise NotImplementedError(
             "Financial statements cannot be loaded from Moneybird."
+        )
+
+    def add_financial_mutation(self, financial_mutation: FinancialMutation) -> None:
+        """
+        Add a financial mutation to the financial statement.
+        """
+        if not isinstance(financial_mutation, FinancialMutation):
+            # If the financial mutation is not an instance of FinancialMutation,
+            # Try to create one from the financial mutation.
+            try:
+                financial_mutation = FinancialMutation.from_dict(financial_mutation)
+            except Exception as e:
+                raise ValueError(
+                    f"Invalid financial mutation. {e}. Financial mutation must be an instance of FinancialMutation."
+                ) from e
+        self.financial_mutations.append(financial_mutation.to_dict(exclude_none=True))
+
+    def get_financial_mutation(self, financial_mutation_id: int) -> dict[str, Any]:
+        """
+        Get a financial mutation from the financial statement.
+        """
+        for financial_mutation in self.financial_mutations:
+            if financial_mutation["id"] == financial_mutation_id:
+                return financial_mutation
+        raise ValueError(
+            f"Financial mutation with id {financial_mutation_id} not found."
         )
 
     @classmethod
