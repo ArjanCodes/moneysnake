@@ -51,7 +51,7 @@ def test_book_payment(mocker: MockType, mutation_data):
         {
             "price_base": 100.0,
             "booking_id": 123,
-            "booking_type": LinkBookingType.LedgerAccount,
+            "booking_type": LinkBookingType.LedgerAccount.name,
         },
         method="PATCH",
     )
@@ -66,6 +66,9 @@ def test_remove_payment(mocker: MockType, mutation_data):
     mutation.remove_payment(123, UnlinkBookingType.LedgerAccountBooking)
     mock_post_request.assert_called_once_with(
         f"financial_mutations/{mutation.id}/unlink_booking",
-        {"booking_id": 123, "booking_type": UnlinkBookingType.LedgerAccountBooking},
+        {
+            "booking_id": 123,
+            "booking_type": UnlinkBookingType.LedgerAccountBooking.name,
+        },
         method="PATCH",
     )
