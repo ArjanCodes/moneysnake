@@ -24,9 +24,10 @@ class FinancialStatement(MoneybirdModel):
         Save the external sales invoice. Overrides the save method in MoneybirdModel.
         """
         financial_statement_data = self.to_dict()
+
         # For the POST and PATCH requests we need to use the details_attributes key
         # instead of details key to match the Moneybird API.
-        financial_statement_data["financial_mutation_attributes"] = (
+        financial_statement_data["financial_mutations_attributes"] = (
             financial_statement_data.pop("financial_mutations", [])
         )
 
@@ -64,17 +65,6 @@ class FinancialStatement(MoneybirdModel):
                     f"Invalid financial mutation. {e}. Financial mutation must be an instance of FinancialMutation."
                 ) from e
         self.financial_mutations.append(financial_mutation.to_dict(exclude_none=True))
-
-    def get_financial_mutation(self, financial_mutation_id: int) -> dict[str, Any]:
-        """
-        Get a financial mutation from the financial statement.
-        """
-        for financial_mutation in self.financial_mutations:
-            if financial_mutation["id"] == financial_mutation_id:
-                return financial_mutation
-        raise ValueError(
-            f"Financial mutation with id {financial_mutation_id} not found."
-        )
 
     @classmethod
     def find_by_id(cls: type[Self], id: int) -> Self:

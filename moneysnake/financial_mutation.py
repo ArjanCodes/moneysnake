@@ -86,7 +86,7 @@ class FinancialMutation(MoneybirdModel):
             {
                 "price_base": price_base,
                 "booking_id": booking_id,
-                "booking_type": booking_type,
+                "booking_type": booking_type.name,
             },
             method="PATCH",
         )
@@ -101,7 +101,7 @@ class FinancialMutation(MoneybirdModel):
         """
         post_request(
             f"financial_mutations/{self.id}/unlink_booking",
-            {"booking_id": booking_id, "booking_type": booking_type},
+            {"booking_id": booking_id, "booking_type": booking_type.name},
             method="PATCH",
         )
 
