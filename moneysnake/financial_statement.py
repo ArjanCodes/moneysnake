@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Self
+from typing import Self
 from dataclasses import dataclass, field
 
 from .model import MoneybirdModel
@@ -12,12 +12,12 @@ class FinancialStatement(MoneybirdModel):
     Represents a financial statement in Moneybird.
     """
 
-    financial_account_id: Optional[str] = None
-    reference: Optional[str] = None
-    official_date: Optional[str] = None
-    official_balance: Optional[str] = None
-    importer_service: Optional[str] = None
-    financial_mutations: List[FinancialMutation] = field(default_factory=list)
+    financial_account_id: str | None = None
+    reference: str | None = None
+    official_date: str | None = None
+    official_balance: str | None = None
+    importer_service: str | None = None
+    financial_mutations: list[FinancialMutation] = field(default_factory=list)
 
     def save(self) -> None:
         """

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional, Self, Union, get_origin, get_args
+from typing import Any, Self, Union, get_origin, get_args
 import inspect
 
 from .client import post_request
@@ -7,7 +7,7 @@ from .client import post_request
 
 @dataclass
 class MoneybirdModel:
-    id: Optional[int] = None
+    id: int | None = None
 
     @property
     def endpoint(self) -> str:
