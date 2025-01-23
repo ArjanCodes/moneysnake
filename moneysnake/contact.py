@@ -43,7 +43,7 @@ class Contact(CustomFieldModel):
     estimate_workflow_id: int | None = None
     email_ubl: bool = False
     direct_debit: bool = False
-    contact_person: ContactPerson | None = None
+    contact_people: ContactPerson | None = None
     type: str | None = None
     from_checkout: bool = False
 
