@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import inspect
-from typing import Any, Optional, List, Self
+from typing import Any, Self
 
 from .model import MoneybirdModel
 from .client import post_request
@@ -13,14 +13,14 @@ class ExternalSalesInvoiceDetailsAttribute:
     Details attribute for an external sales invoice.
     """
 
-    id: Optional[int] = None
-    description: Optional[str] = None
-    period: Optional[str] = None
-    price: Optional[int] = None
-    amount: Optional[int] = None
-    tax_rate_id: Optional[int] = None
-    ledger_account_id: Optional[str] = None
-    project_id: Optional[str] = None
+    id: int | None = None
+    description: str | None = None
+    period: str | None = None
+    price: int | None = None
+    amount: int | None = None
+    tax_rate_id: int | None = None
+    ledger_account_id: str | None = None
+    project_id: str | None = None
 
     def to_dict(self, exclude_none: bool = False) -> dict[str, Any]:
         def convert_value(value: Any) -> Any:
@@ -49,18 +49,18 @@ class ExternalSalesInvoice(MoneybirdModel):
     Represents an external sales invoice in Moneybird.
     """
 
-    contact_id: Optional[int] = None
-    reference: Optional[str] = None
-    date: Optional[str] = None
-    due_date: Optional[str] = None
-    currency: Optional[str] = None
-    prices_are_incl_tax: Optional[bool] = None
-    source: Optional[str] = None
-    source_url: Optional[str] = None
-    details: Optional[List[ExternalSalesInvoiceDetailsAttribute]] = field(
+    contact_id: int | None = None
+    reference: str | None = None
+    date: str | None = None
+    due_date: str | None = None
+    currency: str | None = None
+    prices_are_incl_tax: bool | None = None
+    source: str | None = None
+    source_url: str | None = None
+    details: list[ExternalSalesInvoiceDetailsAttribute] | None = field(
         default_factory=list
     )
-    payments: Optional[List[Payment]] = field(default_factory=list)
+    payments: list[Payment] | None = field(default_factory=list)
 
     def update(self, data: dict[str, Any]) -> None:
         """
@@ -135,9 +135,9 @@ class ExternalSalesInvoice(MoneybirdModel):
     def list_all_by_contact_id(
         self,
         contact_id: int,
-        state: Optional[str] = "all",
-        period: Optional[str] = "this_year",
-    ) -> List:
+        state: str | None = "all",
+        period: str | None = "this_year",
+    ) -> list["ExternalSalesInvoice"]:
         """
         List all external sales invoices for a contact.
         """
@@ -146,7 +146,7 @@ class ExternalSalesInvoice(MoneybirdModel):
             method="get",
         )
 
-        invoices = []
+        invoices: list[ExternalSalesInvoice] = []
         for invoice in data:
             invoice_obj = ExternalSalesInvoice.from_dict(invoice)
             if "details" in invoice:

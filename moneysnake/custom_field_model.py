@@ -1,13 +1,12 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from .model import MoneybirdModel
 
 
 @dataclass
 class CustomField:
-    id: Optional[int] = None
-    value: Optional[str] = None
+    id: int | None = None
+    value: str | None = None
 
 
 class CustomFieldModel(MoneybirdModel):

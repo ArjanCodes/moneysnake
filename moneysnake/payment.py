@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from .model import MoneybirdModel
 
@@ -10,15 +9,15 @@ class Payment(MoneybirdModel):
     Represents a payment in Moneybird.
     """
 
-    payment_date: Optional[str] = None
-    price: Optional[float] = None
-    price_base: Optional[float] = None
-    financial_account_id: Optional[int] = None
-    financial_mutation_id: Optional[int] = None
-    manual_payment_action: Optional[str] = "bank_transfer"
-    transaction_identifier: Optional[str] = None
-    ledger_account_id: Optional[int] = None
-    invoice_id: Optional[int] = None
+    payment_date: str | None = None
+    price: float | None = None
+    price_base: float | None = None
+    financial_account_id: int | None = None
+    financial_mutation_id: int | None = None
+    manual_payment_action: str | None = "bank_transfer"
+    transaction_identifier: str | None = None
+    ledger_account_id: int | None = None
+    invoice_id: int | None = None
 
     def save(self) -> None:
         raise NotImplementedError(
