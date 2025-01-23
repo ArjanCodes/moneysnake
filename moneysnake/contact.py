@@ -44,7 +44,7 @@ class Contact(CustomFieldModel):
     estimate_workflow_id: Optional[int] = None
     email_ubl: bool = False
     direct_debit: bool = False
-    contact_person: Optional[ContactPerson] = None
+    contact_people: Optional[ContactPerson] = None
     type: Optional[str] = None
     from_checkout: bool = False
 
