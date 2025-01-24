@@ -1,3 +1,4 @@
+from typing import Any
 import pytest
 from moneysnake.financial_mutation import (
     FinancialMutation,
@@ -8,7 +9,7 @@ from pytest_mock import MockType
 
 
 @pytest.fixture(name="mutation_data")
-def fixture_mutation_data():
+def fixture_mutation_data() -> dict[str, Any]:
     """
     Return a dictionary with data for a financial mutation.
     """
@@ -39,36 +40,34 @@ def fixture_mutation_data():
     }
 
 
-def test_book_payment(mocker: MockType, mutation_data):
+def test_book_payment(mocker: MockType, mutation_data: dict[str, Any]):
     """
     Test booking a payment on a financial mutation.
     """
-    mock_post_request = mocker.patch("moneysnake.financial_mutation.post_request")
-    mutation = FinancialMutation.from_dict(mutation_data)
+    mock_make_request = mocker.patch("moneysnake.financial_mutation.http_patch")
+    mutation = FinancialMutation(**mutation_data)
     mutation.book_payment(100.0, 123, LinkBookingType.LedgerAccount)
-    mock_post_request.assert_called_once_with(
+    mock_make_request.assert_called_once_with(
         f"financial_mutations/{mutation.id}/link_booking",
         {
             "price_base": 100.0,
             "booking_id": 123,
             "booking_type": LinkBookingType.LedgerAccount.name,
         },
-        method="PATCH",
     )
 
 
-def test_remove_payment(mocker: MockType, mutation_data):
+def test_remove_payment(mocker: MockType, mutation_data: dict[str, Any]):
     """
     Test removing a payment from a financial mutation.
     """
-    mock_post_request = mocker.patch("moneysnake.financial_mutation.post_request")
-    mutation = FinancialMutation.from_dict(mutation_data)
+    mock_make_request = mocker.patch("moneysnake.financial_mutation.http_patch")
+    mutation = FinancialMutation(**mutation_data)
     mutation.remove_payment(123, UnlinkBookingType.LedgerAccountBooking)
-    mock_post_request.assert_called_once_with(
+    mock_make_request.assert_called_once_with(
         f"financial_mutations/{mutation.id}/unlink_booking",
         {
             "booking_id": 123,
             "booking_type": UnlinkBookingType.LedgerAccountBooking.name,
         },
-        method="PATCH",
     )

@@ -1,10 +1,8 @@
-from dataclasses import dataclass
-
+from pydantic import BaseModel
 from .model import MoneybirdModel
 
 
-@dataclass
-class CustomField:
+class CustomField(BaseModel):
     id: int | None = None
     value: str | None = None
 

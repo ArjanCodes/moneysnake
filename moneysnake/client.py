@@ -26,9 +26,9 @@ def set_timeout(timeout: int) -> None:
     timeout_ = timeout
 
 
-def post_request(
+def make_request(
     path: str, data: dict[str, Any] | None = None, method: str = "post"
-) -> dict[str, Any]:
+) -> Any:
     headers = {
         "Authorization": f"Bearer {token_}",
         "Content-Type": "application/json",
@@ -41,3 +41,19 @@ def post_request(
 
     # return json if there is content
     return response.json() if response.content else {}
+
+
+def http_get(path: str) -> Any:
+    return make_request(path, method="get")
+
+
+def http_post(path: str, data: dict[str, Any] | None = None) -> Any:
+    return make_request(path, method="post", data=data)
+
+
+def http_patch(path: str, data: dict[str, Any] | None = None) -> Any:
+    return make_request(path, method="patch", data=data)
+
+
+def http_delete(path: str) -> Any:
+    return make_request(path, method="delete")

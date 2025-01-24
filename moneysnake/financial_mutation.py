@@ -1,9 +1,9 @@
 from typing import Any, Self
-from dataclasses import dataclass, field
+from dataclasses import field
 from enum import Enum, auto
 
 from .model import MoneybirdModel
-from .client import post_request
+from .client import http_patch
 
 
 class LinkBookingType(Enum):
@@ -34,14 +34,13 @@ class UnlinkBookingType(Enum):
     Payment = auto()
 
 
-@dataclass
 class FinancialMutation(MoneybirdModel):
     """
     Represents a financial mutation in Moneybird.
     """
 
     id: int | None = None
-    administration_id: str | None = None
+    administration_id: str | int | None = None
     amount: str | None = None
     code: str | None = None
     date: str | None = None
@@ -57,7 +56,7 @@ class FinancialMutation(MoneybirdModel):
     original_amount: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
-    version: str | None = None
+    version: str | int | None = None
     financial_statement_id: str | None = None
     processed_at: str | None = None
     account_servicer_transaction_id: str | None = None
@@ -81,14 +80,13 @@ class FinancialMutation(MoneybirdModel):
         """
         Book a payment on this financial mutation.
         """
-        post_request(
+        http_patch(
             f"financial_mutations/{self.id}/link_booking",
             {
                 "price_base": price_base,
                 "booking_id": booking_id,
                 "booking_type": booking_type.name,
             },
-            method="PATCH",
         )
 
     def remove_payment(
@@ -99,10 +97,9 @@ class FinancialMutation(MoneybirdModel):
         """
         Remove a payment from this financial mutation.
         """
-        post_request(
+        http_patch(
             f"financial_mutations/{self.id}/unlink_booking",
             {"booking_id": booking_id, "booking_type": booking_type.name},
-            method="PATCH",
         )
 
     @classmethod

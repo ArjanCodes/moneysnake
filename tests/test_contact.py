@@ -104,7 +104,7 @@ def test_find_by_customer_id(mocker: MockType, contact_data: ContactData):
     """
     Test that Contact.find_by_customer_id returns a Contact object with the correct data
     """
-    mocker.patch("moneysnake.contact.post_request", return_value=contact_data)
+    mocker.patch("moneysnake.contact.http_get", return_value=contact_data)
     customer_id = "1"
     contact = Contact.find_by_customer_id(customer_id)
 

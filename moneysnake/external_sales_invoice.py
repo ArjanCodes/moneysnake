@@ -1,14 +1,14 @@
-from dataclasses import dataclass, field
-import inspect
-from typing import Any, Self
+from dataclasses import field
+from typing import Any, cast
+
+from pydantic import BaseModel
 
 from .model import MoneybirdModel
-from .client import post_request
+from .client import http_delete, http_get, http_patch, http_post
 from .payment import Payment
 
 
-@dataclass
-class ExternalSalesInvoiceDetailsAttribute:
+class ExternalSalesInvoiceDetailsAttribute(BaseModel):
     """
     Details attribute for an external sales invoice.
     """
@@ -17,33 +17,21 @@ class ExternalSalesInvoiceDetailsAttribute:
     description: str | None = None
     period: str | None = None
     price: int | None = None
-    amount: int | None = None
+    amount: int | str | None = None
     tax_rate_id: int | None = None
     ledger_account_id: str | None = None
     project_id: str | None = None
 
-    def to_dict(self, exclude_none: bool = False) -> dict[str, Any]:
-        def convert_value(value: Any) -> Any:
-            if isinstance(value, MoneybirdModel):
-                return value.to_dict()
-            return value
-
-        return {
-            key: convert_value(value)
-            for key, value in self.__dict__.items()
-            if not (exclude_none and value is None)
-        }
-
-    @classmethod
-    def from_dict(cls: type[Self], data: dict[str, Any]) -> Self:
-        return cls(
-            **{k: v for k, v in data.items() if k in inspect.signature(cls).parameters}
-        )
+    def update(self, data: dict[str, Any]) -> None:
+        for key, value in data.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
 
 # External sales invoices don't have custom fields, so we use MoneybirdModel
 # instead of CustomFieldModel.
-@dataclass
+
+
 class ExternalSalesInvoice(MoneybirdModel):
     """
     Represents an external sales invoice in Moneybird.
@@ -67,9 +55,11 @@ class ExternalSalesInvoice(MoneybirdModel):
         Update the external sales invoice. Overrides the update method in MoneybirdModel.
         """
         super().update(data)
-        self.payments = [
-            Payment.from_dict(p) if isinstance(p, dict) else p for p in self.payments
-        ]
+        if self.payments is not None:
+            pass
+            # self.payments = [
+            #     Payment.model_dump(p) if isinstance(p, dict) else p for p in self.payments
+            # ]
 
     def save(self) -> None:
         """
@@ -81,16 +71,14 @@ class ExternalSalesInvoice(MoneybirdModel):
         invoice_data["details_attributes"] = invoice_data.pop("details", [])
 
         if self.id is None:
-            data = post_request(
+            data = http_post(
                 f"{self.endpoint}s",
                 data={self.endpoint: invoice_data},
-                method="post",
             )
         else:
-            data = post_request(
+            data = http_patch(
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: invoice_data},
-                method="patch",
             )
         self.update(data)
 
@@ -98,27 +86,27 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         Add a detail to the external sales invoice.
         """
-        if not isinstance(detail, ExternalSalesInvoiceDetailsAttribute):
-            # If the detail is not an instance of ExternalSalesInvoiceDetailsAttribute,
-            # Try to create one from the detail.
-            try:
-                detail = ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
-            except Exception as e:
-                raise ValueError(
-                    f"Invalid detail. {e}. Detail must be an instance of ExternalSalesInvoiceDetailsAttribute."
-                ) from e
-        self.details.append(detail.to_dict(exclude_none=True))
+        if self.details is None:
+            self.details = []
 
-    def get_detail(self, detail_id: int) -> dict[str, Any]:
+        self.details.append(detail)
+
+    def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttribute:
         """
         Get a detail from the external sales invoice.
         """
+
+        if not self.details:
+            raise ValueError("No details found.")
+
         for detail in self.details:
-            if detail["id"] == detail_id:
+            if detail.id == detail_id:
                 return detail
         raise ValueError(f"Detail with id {detail_id} not found.")
 
-    def update_detail(self, detail_id: int, data: dict[str, Any]) -> dict[str, Any]:
+    def update_detail(
+        self, detail_id: int, data: dict[str, Any]
+    ) -> ExternalSalesInvoiceDetailsAttribute:
         """
         Update a detail from the external sales invoice.
         """
@@ -130,7 +118,9 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         Delete a detail from the external sales invoice.
         """
-        self.details = [detail for detail in self.details if detail["id"] != detail_id]
+
+        if self.details:
+            self.details = [detail for detail in self.details if detail.id != detail_id]
 
     def list_all_by_contact_id(
         self,
@@ -141,23 +131,15 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         List all external sales invoices for a contact.
         """
-        data = post_request(
-            path=f"{self.endpoint}s/?filter=contact_id:{contact_id}&state:{state}&period:{period}",
-            method="get",
+        data = http_get(
+            path=f"{self.endpoint}s/?filter=contact_id:{contact_id}&state:{state}&period:{period}"
         )
 
+        data_list = cast(list[dict[str, Any]], data)
+
         invoices: list[ExternalSalesInvoice] = []
-        for invoice in data:
-            invoice_obj = ExternalSalesInvoice.from_dict(invoice)
-            if "details" in invoice:
-                invoice_obj.details = [
-                    ExternalSalesInvoiceDetailsAttribute.from_dict(detail)
-                    for detail in invoice["details"]
-                ]
-            if "payments" in invoice:
-                invoice_obj.payments = [
-                    Payment.from_dict(payment) for payment in invoice["payments"]
-                ]
+        for invoice_data in data_list:
+            invoice_obj = ExternalSalesInvoice(**invoice_data)
             invoices.append(invoice_obj)
         return invoices
 
@@ -165,23 +147,29 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         Create a payment for the external sales invoice.
         """
-        data = post_request(
+        data = http_post(
             path=f"{self.endpoint}s/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
         # Get the payment data from the response and append it to the payments list
         payment_data = data.get("payment")
+
+        if self.payments is None:
+            self.payments = []
+
         if payment_data:
-            self.payments.append(Payment.from_dict(payment_data))
+            self.payments.append(Payment(**payment_data))
 
     def delete_payment(self, payment_id: int) -> None:
         """
         Delete a payment for the external sales invoice.
         """
-        post_request(
+        http_delete(
             path=f"{self.endpoint}s/{self.id}/payments/{payment_id}",
-            method="delete",
         )
+
+        if not self.payments:
+            raise ValueError("No payments found.")
 
         self.payments = [
             payment for payment in self.payments if payment.id != payment_id

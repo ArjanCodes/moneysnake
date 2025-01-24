@@ -1,12 +1,12 @@
 from typing import Self
-from dataclasses import dataclass, field
+from dataclasses import field
+
+from moneysnake.client import http_patch, http_post
 
 from .model import MoneybirdModel
 from .financial_mutation import FinancialMutation
-from .client import post_request
 
 
-@dataclass
 class FinancialStatement(MoneybirdModel):
     """
     Represents a financial statement in Moneybird.
@@ -32,17 +32,15 @@ class FinancialStatement(MoneybirdModel):
         )
 
         if self.id is None:
-            data = post_request(
+            data = http_post(
                 f"{self.endpoint}s",
                 data={self.endpoint: financial_statement_data},
-                method="post",
             )
 
         else:
-            data = post_request(
+            data = http_patch(
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: financial_statement_data},
-                method="patch",
             )
         self.update(data)
 
@@ -55,16 +53,7 @@ class FinancialStatement(MoneybirdModel):
         """
         Add a financial mutation to the financial statement.
         """
-        if not isinstance(financial_mutation, FinancialMutation):
-            # If the financial mutation is not an instance of FinancialMutation,
-            # Try to create one from the financial mutation.
-            try:
-                financial_mutation = FinancialMutation.from_dict(financial_mutation)
-            except Exception as e:
-                raise ValueError(
-                    f"Invalid financial mutation. {e}. Financial mutation must be an instance of FinancialMutation."
-                ) from e
-        self.financial_mutations.append(financial_mutation.to_dict(exclude_none=True))
+        self.financial_mutations.append(financial_mutation)
 
     @classmethod
     def find_by_id(cls: type[Self], id: int) -> Self:
