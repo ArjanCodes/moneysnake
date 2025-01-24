@@ -1,3 +1,4 @@
+from typing import Any
 import pytest
 from moneysnake.payment import Payment
 from pytest_mock import MockType
@@ -27,8 +28,8 @@ def fixture_payment_data() -> dict[str, str | int | None]:
     }
 
 
-def test_payment(payment_data: dict[str, str | int | None], mocker: MockType):
-    payment = Payment.from_dict(payment_data)
+def test_payment(payment_data: dict[str, Any], mocker: MockType):
+    payment = Payment(**payment_data)
 
     assert payment.payment_date == "2024-09-30"
     assert payment.price == 363.0

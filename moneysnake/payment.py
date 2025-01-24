@@ -1,9 +1,6 @@
-from dataclasses import dataclass
-
 from .model import MoneybirdModel
 
 
-@dataclass
 class Payment(MoneybirdModel):
     """
     Represents a payment in Moneybird.

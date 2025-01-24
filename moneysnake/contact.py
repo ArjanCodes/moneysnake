@@ -1,16 +1,13 @@
-from dataclasses import dataclass
-
-from .client import post_request
+from pydantic import BaseModel
+from .client import http_get
 from .custom_field_model import CustomFieldModel
 
 
-@dataclass
-class ContactPerson:
+class ContactPerson(BaseModel):
     firstname: str | None = None
     lastname: str | None = None
 
 
-@dataclass
 class Contact(CustomFieldModel):
     company_name: str | None = None
     address1: str | None = None
@@ -43,7 +40,7 @@ class Contact(CustomFieldModel):
     estimate_workflow_id: int | None = None
     email_ubl: bool = False
     direct_debit: bool = False
-    contact_people: ContactPerson | None = None
+    contact_people: list[ContactPerson] | None = None
     type: str | None = None
     from_checkout: bool = False
 
@@ -52,5 +49,5 @@ class Contact(CustomFieldModel):
         """
         Find a contact by customer_id
         """
-        data = post_request(f"contacts/customer_id/{customer_id}", method="get")
-        return Contact.from_dict(data)
+        data = http_get(f"contacts/customer_id/{customer_id}")
+        return Contact(**data)

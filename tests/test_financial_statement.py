@@ -1,10 +1,11 @@
+from typing import Any
 import pytest
 from pytest_mock import MockType
 from moneysnake.financial_statement import FinancialStatement
 
 
 @pytest.fixture(name="statement_data")
-def fixture_statement_data():
+def fixture_statement_data() -> dict[str, Any]:
     """
     Return a dictionary with data for a financial statement.
     """
@@ -70,14 +71,14 @@ def fixture_statement_data():
     }
 
 
-def test_create_financial_statement(mocker: MockType, statement_data):
+def test_create_financial_statement(mocker: MockType, statement_data: dict[str, Any]):
     """
     Test creating a financial statement.
     """
     del statement_data["id"]
-    mock_post_request = mocker.patch("moneysnake.financial_statement.post_request")
-    mock_post_request.return_value = {"id": 433546265561662833, **statement_data}
-    statement = FinancialStatement.from_dict(statement_data)
+    mock_make_request = mocker.patch("moneysnake.financial_statement.http_post")
+    mock_make_request.return_value = {"id": 433546265561662833, **statement_data}
+    statement = FinancialStatement(**statement_data)
     statement.save()
 
     assert statement.id == 433546265561662833

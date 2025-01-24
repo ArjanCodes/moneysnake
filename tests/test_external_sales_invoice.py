@@ -1,3 +1,4 @@
+from typing import Any
 import pytest
 from pytest_mock import MockType
 from moneysnake.external_sales_invoice import (
@@ -8,7 +9,7 @@ from moneysnake.payment import Payment as ExternalSalesInvoicePayment
 
 
 @pytest.fixture(name="invoice_data")
-def fixture_invoice_data():
+def fixture_invoice_data() -> dict[str, Any]:
     """
     Return a dictionary with data for an external sales invoice.
     """
@@ -130,7 +131,7 @@ def fixture_invoice_data():
 
 
 @pytest.fixture(name="payment_data")
-def fixture_payment_data():
+def fixture_payment_data() -> dict[str, Any]:
     """
     Return a dictionary with data for an external sales invoice payment.
     """
@@ -156,124 +157,144 @@ def fixture_payment_data():
     }
 
 
-def test_save_new_invoice(mocker: MockType, invoice_data):
+def test_save_new_invoice(mocker: MockType, invoice_data: dict[str, Any]):
     """
     Test saving a new external sales invoice.
     """
     # Remove id from invoice data
     del invoice_data["id"]
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = {"id": 433546255183906622, **invoice_data}
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_post")
+    mock_make_request.return_value = {"id": 433546255183906622, **invoice_data}
+    invoice = ExternalSalesInvoice(**invoice_data)
     invoice.save()
     assert invoice.id == 433546255183906622
 
 
-def test_update_existing_invoice(mocker: MockType, invoice_data):
+def test_update_existing_invoice(mocker: MockType, invoice_data: dict[str, Any]):
     """
     Test updating an existing external sales invoice.
     """
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = invoice_data
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_patch")
+    mock_make_request.return_value = invoice_data
+    invoice = ExternalSalesInvoice(**invoice_data)
     invoice.save()
+
+    assert invoice.id is not None
     assert int(invoice.id) == 433546254874576683
 
 
-def test_create_payment(mocker: MockType, invoice_data, payment_data):
+def test_create_payment(
+    mocker: MockType,
+    invoice_data: dict[str, Any],
+    payment_data: dict[str, Any],
+):
     """
     Test creating a payment for an external sales invoice.
     """
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = {"payment": payment_data}
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_post")
+    mock_make_request.return_value = {"payment": payment_data}
+    invoice = ExternalSalesInvoice(**invoice_data)
     invoice.id = 433546254874576683
-    invoice.create_payment(ExternalSalesInvoicePayment.from_dict(payment_data))
+    external_sales_invoice_payment = ExternalSalesInvoicePayment(**payment_data)
+    invoice.create_payment(external_sales_invoice_payment)
 
+    assert invoice.payments is not None
     assert len(invoice.payments) == 1
 
 
-def test_delete_payment(mocker: MockType, invoice_data, payment_data):
+def test_delete_payment(
+    mocker: MockType,
+    invoice_data: dict[str, Any],
+    payment_data: dict[str, Any],
+):
     """
     Test deleting a payment for an external sales invoice.
     """
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = {"payment": payment_data}
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_post")
+
+    mock_make_request.return_value = {"payment": payment_data}
+    invoice = ExternalSalesInvoice(**invoice_data)
     invoice.id = 433546254874576683
-    invoice.create_payment(ExternalSalesInvoicePayment.from_dict(payment_data))
+    invoice.create_payment(ExternalSalesInvoicePayment(**payment_data))
+
+    assert invoice.payments is not None
 
     assert len(invoice.payments) == 1
 
-    mock_post_request.return_value = None
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_delete")
+    mock_make_request.return_value = None
     invoice.delete_payment(433546259519768528)
 
     assert len(invoice.payments) == 0
 
 
-def test_list_all_by_contact_id(mocker: MockType, invoice_data):
+def test_list_all_by_contact_id(mocker: MockType, invoice_data: dict[str, Any]):
     """
     Test listing all external sales invoices for a contact.
     """
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = [invoice_data]
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_get")
+    mock_make_request.return_value = [invoice_data]
     invoices = ExternalSalesInvoice().list_all_by_contact_id(433546254856750888)
     assert len(invoices) == 1
 
 
-def test_update_by_id(mocker: MockType, invoice_data):
+def test_update_by_id(mocker: MockType, invoice_data: dict[str, Any]):
     """
     Test updating an external sales invoice by ID.
     """
-    mock_post_request = mocker.patch("moneysnake.external_sales_invoice.post_request")
-    mock_post_request.return_value = {**invoice_data, "date": "2024-09-29"}
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_patch")
+    mock_make_request.return_value = {**invoice_data, "date": "2024-09-29"}
     updated_data = {"date": "2024-09-29"}
     invoice = ExternalSalesInvoice.update_by_id(433546254874576683, updated_data)
     assert invoice.date == "2024-09-29"
 
 
-def test_add_detail(invoice_data):
+def test_add_detail(invoice_data: dict[str, Any]):
     """
     Test adding a detail to an external sales invoice.
     """
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
-    detail_data = {
+    invoice = ExternalSalesInvoice(**invoice_data)
+    detail_data: dict[str, Any] = {
         "id": 2,
         "description": "New detail",
         "price": 200,
         "amount": 2,
     }
-    detail = ExternalSalesInvoiceDetailsAttribute.from_dict(detail_data)
+    detail = ExternalSalesInvoiceDetailsAttribute(**detail_data)
     invoice.add_detail(detail)
+
+    assert invoice.details is not None
+
     assert len(invoice.details) == 2
-    assert invoice.details[-1]["description"] == "New detail"
+    assert invoice.details[-1].description == "New detail"
 
 
-def test_get_detail(invoice_data):
+def test_get_detail(invoice_data: dict[str, Any]):
     """
     Test getting a detail from an external sales invoice.
     """
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
-    detail = invoice.get_detail("433546254876673836")
-    assert detail["description"] == "Invoice detail description"
+    invoice = ExternalSalesInvoice(**invoice_data)
+    detail = invoice.get_detail(433546254876673836)
+    assert detail.description == "Invoice detail description"
 
 
-def test_update_detail(invoice_data):
+def test_update_detail(invoice_data: dict[str, Any]):
     """
     Test updating a detail from an external sales invoice.
     """
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
+    invoice = ExternalSalesInvoice(**invoice_data)
     updated_detail_data = ExternalSalesInvoiceDetailsAttribute(
         description="Updated description"
-    ).to_dict(exclude_none=True)
-    detail = invoice.update_detail("433546254876673836", updated_detail_data)
-    assert detail["description"] == "Updated description"
+    ).model_dump(exclude_none=True)
+    detail = invoice.update_detail(433546254876673836, updated_detail_data)
+    assert detail.description == "Updated description"
 
 
-def test_delete_detail(invoice_data):
+def test_delete_detail(invoice_data: dict[str, Any]):
     """
     Test deleting a detail from an external sales invoice.
     """
-    invoice = ExternalSalesInvoice.from_dict(invoice_data)
-    invoice.delete_detail("433546254876673836")
+    invoice = ExternalSalesInvoice(**invoice_data)
+    invoice.delete_detail(433546254876673836)
+    assert invoice.details is not None
     assert len(invoice.details) == 0
