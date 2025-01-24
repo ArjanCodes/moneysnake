@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Self, Union, get_origin, get_args
 import inspect
 
@@ -99,25 +100,39 @@ class MoneybirdModel:
         """
         Attempt to convert a value to the given parameter type.
         """
+
+        # Since this is a union, we need to get type that is not None
+        type_args = get_args(param_type)
+
+        if type(None) in type_args:
+            type_args = [arg for arg in type_args if arg is not type(None)]
+
+        if len(type_args) == 0:
+            return value
+
+        base_type = type_args[0]
+
         if value is not None:
             try:
-                return param_type(value)
+                return base_type(value)
             except (ValueError, TypeError):
                 pass
         return value
 
     @classmethod
     def _filter_params(
-        cls, data: dict[str, Any], params: inspect.Signature
+        cls, data: dict[str, Any], params: MappingProxyType[str, inspect.Parameter]
     ) -> dict[str, Any]:
         """
         Filter and convert input data based on class parameters.
         """
-        filtered_data = {}
+        filtered_data: dict[str, Any] = {}
+
         for key, value in data.items():
-            if key in params:
+            if key in params.keys():
                 param_type = cls._get_param_type(params[key].annotation)
                 filtered_data[key] = cls._convert_value(value, param_type)
+
         return filtered_data
 
     @classmethod
@@ -126,5 +141,6 @@ class MoneybirdModel:
         Create an instance of the class from a dictionary, performing type conversion.
         """
         params = inspect.signature(cls).parameters
+
         filtered_data = cls._filter_params(data, params)
         return cls(**{k: v for k, v in filtered_data.items() if k in params})

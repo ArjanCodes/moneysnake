@@ -4,7 +4,7 @@ from pytest_mock import MockType
 
 
 @pytest.fixture(name="payment_data")
-def fixture_payment_data():
+def fixture_payment_data() -> dict[str, str | int | None]:
     return {
         "id": "433546310070568441",
         "administration_id": 123,
@@ -27,7 +27,7 @@ def fixture_payment_data():
     }
 
 
-def test_payment(payment_data: dict, mocker: MockType):
+def test_payment(payment_data: dict[str, str | int | None], mocker: MockType):
     payment = Payment.from_dict(payment_data)
 
     assert payment.payment_date == "2024-09-30"
