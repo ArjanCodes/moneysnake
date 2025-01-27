@@ -26,7 +26,15 @@ class FinancialStatement(MoneybirdModel):
         if value is None:
             return None
 
-        return [FinancialMutation(**financial_mutation) for financial_mutation in value]
+        financial_mutations: list[FinancialMutation] = []
+
+        for financial_mutation in value:
+            if isinstance(financial_mutation, FinancialMutation):
+                financial_mutations.append(financial_mutation)
+            else:
+                financial_mutations.append(FinancialMutation(**financial_mutation))
+
+        return financial_mutations
 
     def save(self) -> None:
         """

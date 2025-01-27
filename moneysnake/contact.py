@@ -55,9 +55,17 @@ class Contact(CustomFieldModel):
 
     @field_validator("contact_people")
     def ensure_contact_people(
-        cls, value: list[dict[str, Any]] | None
+        cls, value: list[dict[str, Any] | ContactPerson] | None
     ) -> list[ContactPerson] | None:
         if value is None:
             return None
 
-        return [ContactPerson(**person) for person in value]
+        contact_people: list[ContactPerson] = []
+
+        for person in value:
+            if isinstance(person, ContactPerson):
+                contact_people.append(person)
+            else:
+                contact_people.append(ContactPerson(**person))
+
+        return contact_people
