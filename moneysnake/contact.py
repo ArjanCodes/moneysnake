@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from .client import http_get
 from .custom_field_model import CustomFieldModel
 
@@ -51,3 +51,12 @@ class Contact(CustomFieldModel):
         """
         data = http_get(f"contacts/customer_id/{customer_id}")
         return Contact(**data)
+
+    @field_validator("contact_people")
+    def ensure_contact_people(
+        cls, value: list[dict[str, str]] | None
+    ) -> list[ContactPerson] | None:
+        if value is None:
+            return None
+
+        return [ContactPerson(**person) for person in value]
