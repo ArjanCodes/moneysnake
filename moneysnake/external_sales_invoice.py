@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, field_validator
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -49,6 +49,15 @@ class ExternalSalesInvoice(MoneybirdModel):
         default_factory=list
     )
     payments: list[Payment] | None = Field(default_factory=list)
+
+    @field_validator("payments")
+    def ensure_payments(
+        cls, value: list[dict[str, Any]] | None
+    ) -> list[Payment] | None:
+        if value is None:
+            return None
+
+        return [Payment(**payment) for payment in value]
 
     def update(self, data: dict[str, Any]) -> None:
         """
