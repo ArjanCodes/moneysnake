@@ -1,5 +1,5 @@
 from typing import Self
-from dataclasses import field
+from pydantic import Field
 
 from moneysnake.client import http_patch, http_post
 
@@ -17,7 +17,7 @@ class FinancialStatement(MoneybirdModel):
     official_date: str | None = None
     official_balance: str | None = None
     importer_service: str | None = None
-    financial_mutations: list[FinancialMutation] = field(default_factory=list)
+    financial_mutations: list[FinancialMutation] = Field(default_factory=list)
 
     def save(self) -> None:
         """

@@ -1,4 +1,4 @@
-from dataclasses import field
+from pydantic import Field
 from typing import Any, cast
 
 from pydantic import BaseModel
@@ -45,10 +45,10 @@ class ExternalSalesInvoice(MoneybirdModel):
     prices_are_incl_tax: bool | None = None
     source: str | None = None
     source_url: str | None = None
-    details: list[ExternalSalesInvoiceDetailsAttribute] | None = field(
+    details: list[ExternalSalesInvoiceDetailsAttribute] | None = Field(
         default_factory=list
     )
-    payments: list[Payment] | None = field(default_factory=list)
+    payments: list[Payment] | None = Field(default_factory=list)
 
     def update(self, data: dict[str, Any]) -> None:
         """
