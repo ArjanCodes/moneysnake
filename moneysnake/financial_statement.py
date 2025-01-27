@@ -1,5 +1,5 @@
-from typing import Self
-from pydantic import Field
+from typing import Any, Self
+from pydantic import Field, field_validator
 
 from moneysnake.client import http_patch, http_post
 
@@ -18,6 +18,15 @@ class FinancialStatement(MoneybirdModel):
     official_balance: str | None = None
     importer_service: str | None = None
     financial_mutations: list[FinancialMutation] = Field(default_factory=list)
+
+    @field_validator("financial_mutations")
+    def ensure_financial_mutations(
+        cls, value: list[dict[str, Any]] | None
+    ) -> list[FinancialMutation] | None:
+        if value is None:
+            return None
+
+        return [FinancialMutation(**financial_mutation) for financial_mutation in value]
 
     def save(self) -> None:
         """

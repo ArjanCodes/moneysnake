@@ -1,3 +1,4 @@
+from typing import Any
 from pydantic import BaseModel, field_validator
 from .client import http_get
 from .custom_field_model import CustomFieldModel
@@ -54,7 +55,7 @@ class Contact(CustomFieldModel):
 
     @field_validator("contact_people")
     def ensure_contact_people(
-        cls, value: list[dict[str, str]] | None
+        cls, value: list[dict[str, Any]] | None
     ) -> list[ContactPerson] | None:
         if value is None:
             return None
