@@ -11,7 +11,7 @@ from .external_sales_invoice import (
     ExternalSalesInvoiceDetailsAttribute as ExternalSalesInvoiceDetailsAttribute,
 )
 from .payment import Payment as Payment
-from .financial_mutation import FinancialMutation as FinancialMutation
+from .financial_mutation import FinancialMutation as FinancialMutation, LinkBookingType
 from .financial_statement import FinancialStatement as FinancialStatement
 
 __all__ = [
@@ -28,4 +28,5 @@ __all__ = [
     "Payment",
     "FinancialMutation",
     "FinancialStatement",
+    "LinkBookingType",
 ]
