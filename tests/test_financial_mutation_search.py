@@ -1,7 +1,8 @@
 import pytest
-from datetime import datetime
+import importlib
 from moneysnake.financial_mutation import FinancialMutation
 from pytest_mock import MockType
+from freezegun import freeze_time
 
 
 def test_search_financial_mutations(mocker: MockType):
@@ -28,7 +29,7 @@ def test_search_financial_mutations(mocker: MockType):
     mock_http_get.return_value = mock_data
 
     results = FinancialMutation.search(
-        query_string="test", period="20230101", financial_account_id="123"
+        query_string="query:test", period="20230101", financial_account_id="123"
     )
 
     # Verify http_get was called with correct params
@@ -53,7 +54,7 @@ def test_search_financial_mutations_simple_period(mocker: MockType):
     mock_http_get.return_value = []
 
     FinancialMutation.search(
-        query_string="test",
+        query_string="query:test",
         period="202301",  # Month
     )
 
@@ -63,22 +64,21 @@ def test_search_financial_mutations_simple_period(mocker: MockType):
     )
 
 
+@freeze_time("2023-10-25")
 def test_search_financial_mutations_default_period(mocker: MockType):
     """
     Test searching with default period (current day).
     """
+    # Reload the module within the frozen time context
+    import moneysnake.financial_mutation
+
+    importlib.reload(moneysnake.financial_mutation)
+    from moneysnake.financial_mutation import FinancialMutation as FM
+
     mock_http_get = mocker.patch("moneysnake.financial_mutation.http_get")
     mock_http_get.return_value = []
 
-    # Mock datetime to return a fixed date
-    class MockDatetime:
-        @classmethod
-        def now(cls):
-            return datetime(2023, 10, 25)
-
-    mocker.patch("moneysnake.financial_mutation.datetime", MockDatetime)
-
-    FinancialMutation.search(query_string="test")
+    FM.search(query_string="query:test")
 
     # It should be formatted as a range because it is 8 chars
     expected_period = "20231025..20231025"
