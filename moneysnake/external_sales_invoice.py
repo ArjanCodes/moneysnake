@@ -52,12 +52,12 @@ class ExternalSalesInvoice(MoneybirdModel):
 
     @field_validator("payments")
     def ensure_payments(
-        cls, value: list[dict[str, Any]] | None
+        cls, value: list[dict[str, Any]] | list[Payment] | None
     ) -> list[Payment] | None:
         if value is None:
             return None
 
-        return [Payment(**payment) for payment in value]
+        return [p if isinstance(p, Payment) else Payment(**p) for p in value]
 
     def update(self, data: dict[str, Any]) -> None:
         """

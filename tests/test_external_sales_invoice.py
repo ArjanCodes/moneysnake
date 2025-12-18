@@ -298,3 +298,47 @@ def test_delete_detail(invoice_data: dict[str, Any]):
     invoice.delete_detail(433546254876673836)
     assert invoice.details is not None
     assert len(invoice.details) == 0
+
+
+def test_find_by_id_converts_payments_to_objects(
+    mocker: MockType,
+    invoice_data: dict[str, Any],
+    payment_data: dict[str, Any],
+):
+    """
+    Test that find_by_id properly converts payment dicts to Payment objects.
+    This tests that the update method runs field validators.
+    """
+    # Add payments as raw dicts (simulating API response)
+    invoice_data["payments"] = [payment_data]
+
+    mock_http_get = mocker.patch("moneysnake.model.http_get", return_value=invoice_data)
+
+    invoice = ExternalSalesInvoice.find_by_id(433546254874576683)
+
+    mock_http_get.assert_called_once()
+    assert invoice.payments is not None
+    assert len(invoice.payments) == 1
+    assert isinstance(invoice.payments[0], ExternalSalesInvoicePayment)
+    assert invoice.payments[0].id == 433546259519768528
+
+
+def test_load_converts_payments_to_objects(
+    mocker: MockType,
+    invoice_data: dict[str, Any],
+    payment_data: dict[str, Any],
+):
+    """
+    Test that load properly converts payment dicts to Payment objects.
+    """
+    invoice_data["payments"] = [payment_data]
+
+    mocker.patch("moneysnake.model.http_get", return_value=invoice_data)
+
+    invoice = ExternalSalesInvoice(id=433546254874576683)
+    invoice.load(433546254874576683)
+
+    assert invoice.payments is not None
+    assert len(invoice.payments) == 1
+    assert isinstance(invoice.payments[0], ExternalSalesInvoicePayment)
+    assert invoice.payments[0].id == 433546259519768528
