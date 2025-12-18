@@ -1,7 +1,8 @@
+import re
+from enum import Enum, auto
 from typing import Any, Self
 from datetime import datetime
 from pydantic import Field
-from enum import Enum, auto
 
 from .model import MoneybirdModel
 from .client import http_patch, http_get
@@ -50,7 +51,7 @@ class FinancialMutation(MoneybirdModel):
     contra_account_number: str | None = None
     state: str | None = None
     amount_open: str | None = None
-    sepa_fields: str | None = None
+    sepa_fields: dict | None = None
     batch_reference: str | None = None
     financial_account_id: str | None = None
     currency: str | None = None
@@ -106,23 +107,27 @@ class FinancialMutation(MoneybirdModel):
     @classmethod
     def search(
         cls,
-        query_string: str,
-        period: str | None = None,
+        query_string: str | None = None,
+        period: str | None = datetime.now().strftime("%Y%m%d"),
         financial_account_id: str | None = None,
     ) -> list[Self]:
         """
-        Search for financial mutations using the standard list endpoint.
+        Search for financial mutations using the standard list endpoint. The query_string
+        should be in the format 'key:value,key:value' (e.g., 'state:open,amount:>100').
         If the period is a single day (YYYYMMDD), it will be formatted as a range.
         A specific 'period' is required to avoid the 'Too many mutations' error.
         If no period is provided, it defaults to the current day.
         """
-        if period is None:
-            period = datetime.now().strftime("%Y%m%d")
-
         formatted_period = (
             f"{period}..{period}" if len(period) == 8 and ".." not in period else period
         )
-        filter_parts = [f"query:{query_string}", f"period:{formatted_period}"]
+        filter_parts = [f"period:{formatted_period}"]
+
+        if query_string and re.match(
+            r"^[\w]+:[\w\s\-\.]+(?:,[\w]+:[\w\s\-\.]+)*$", query_string
+        ):
+            filter_parts.insert(0, query_string)
+
         if financial_account_id:
             filter_parts.append(f"financial_account_id:{financial_account_id}")
 
