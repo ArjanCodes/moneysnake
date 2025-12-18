@@ -1,23 +1,25 @@
-on: 
-    push:
-        branches: ["main"]
-    pull_request:
-        branches: ["main"]
+name: Run Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install poetry
         run: pipx install poetry
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
-          cache: 'poetry'
+          cache: "poetry"
 
       - name: Install dependencies
         run: poetry install
