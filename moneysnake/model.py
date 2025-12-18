@@ -40,9 +40,11 @@ class MoneybirdModel(BaseModel):
             self.update(data)
 
     def update(self, data: dict[str, Any]) -> None:
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        # Use model_validate to ensure field validators run
+        validated = self.model_validate({**self.model_dump(), **data})
+        # Copy validated field values directly (not via model_dump which converts to dicts)
+        for key in self.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
 
     def delete(self) -> None:
         if not self.id:
