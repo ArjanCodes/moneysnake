@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "moneysnake"
-version = "0.1.0"
+version = "0.2.0"
 description = "Moneybird SDK for Python"
 authors = ["ArjanCodes"]
 license = "MIT"
@@ -20,4 +20,3 @@ pytest-mock = "^3.14.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-

@@ -1,9 +1,10 @@
 from typing import Any, Self
+from datetime import datetime
 from pydantic import Field
 from enum import Enum, auto
 
 from .model import MoneybirdModel
-from .client import http_patch
+from .client import http_patch, http_get
 
 
 class LinkBookingType(Enum):
@@ -101,6 +102,36 @@ class FinancialMutation(MoneybirdModel):
             f"financial_mutations/{self.id}/unlink_booking",
             {"booking_id": booking_id, "booking_type": booking_type.name},
         )
+
+    @classmethod
+    def search(
+        cls,
+        query_string: str,
+        period: str | None = None,
+        financial_account_id: str | None = None,
+    ) -> list[Self]:
+        """
+        Search for financial mutations using the standard list endpoint.
+        If the period is a single day (YYYYMMDD), it will be formatted as a range.
+        A specific 'period' is required to avoid the 'Too many mutations' error.
+        If no period is provided, it defaults to the current day.
+        """
+        if period is None:
+            period = datetime.now().strftime("%Y%m%d")
+
+        formatted_period = (
+            f"{period}..{period}" if len(period) == 8 and ".." not in period else period
+        )
+        filter_parts = [f"query:{query_string}", f"period:{formatted_period}"]
+        if financial_account_id:
+            filter_parts.append(f"financial_account_id:{financial_account_id}")
+
+        filter_val = ",".join(filter_parts)
+
+        params = {"filter": filter_val}
+
+        results = http_get("financial_mutations", params=params)
+        return [cls(**result) for result in results]
 
     @classmethod
     def update_by_id(cls: type[Self], id: int, data: dict[str, Any]) -> Self:

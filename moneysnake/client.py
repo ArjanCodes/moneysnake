@@ -27,7 +27,10 @@ def set_timeout(timeout: int) -> None:
 
 
 def make_request(
-    path: str, data: dict[str, Any] | None = None, method: str = "post"
+    path: str,
+    data: dict[str, Any] | None = None,
+    method: str = "post",
+    params: dict[str, Any] | None = None,
 ) -> Any:
     headers = {
         "Authorization": f"Bearer {token_}",
@@ -35,7 +38,12 @@ def make_request(
     }
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
     response = httpx.request(
-        method, fullpath, json=data, headers=headers, timeout=timeout_
+        method,
+        fullpath,
+        json=data,
+        headers=headers,
+        timeout=timeout_,
+        params=params,
     )
     response.raise_for_status()
 
@@ -43,8 +51,8 @@ def make_request(
     return response.json() if response.content else {}
 
 
-def http_get(path: str) -> Any:
-    return make_request(path, method="get")
+def http_get(path: str, params: dict[str, Any] | None = None) -> Any:
+    return make_request(path, method="get", params=params)
 
 
 def http_post(path: str, data: dict[str, Any] | None = None) -> Any:
