@@ -16,7 +16,7 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
     id: int | None = None
     description: str | None = None
     period: str | None = None
-    price: int | None = None
+    price: int | str | None = None
     amount: int | str | None = None
     tax_rate_id: int | None = None
     ledger_account_id: str | None = None
