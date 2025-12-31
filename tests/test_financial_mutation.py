@@ -1,11 +1,11 @@
 from typing import Any
 import pytest
+from pytest_mock import MockType
 from moneysnake.financial_mutation import (
     FinancialMutation,
     LinkBookingType,
     UnlinkBookingType,
 )
-from pytest_mock import MockType
 
 
 @pytest.fixture(name="mutation_data")

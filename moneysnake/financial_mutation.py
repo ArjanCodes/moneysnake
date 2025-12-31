@@ -104,6 +104,89 @@ class FinancialMutation(MoneybirdModel):
             {"booking_id": booking_id, "booking_type": booking_type.name},
         )
 
+    @staticmethod
+    def _parse_date(date_str: str) -> datetime | None:
+        """
+        Parse a date string in YYYYMMDD or YYYYMM format.
+        Returns None if the format is invalid.
+        """
+        for fmt in ("%Y%m%d", "%Y%m"):
+            try:
+                return datetime.strptime(date_str, fmt)
+            except ValueError:
+                continue
+        return None
+
+    @staticmethod
+    def _validate_period(period: str) -> str:
+        """
+        Validate and format the period string.
+        Accepts:
+        - Predefined periods: this_month, prev_month, next_month, this_quarter,
+          prev_quarter, next_quarter, this_year, prev_year, next_year
+        - Single date: YYYYMMDD or YYYYMM (will be formatted as a range)
+        - Date range: YYYYMMDD..YYYYMMDD or YYYYMM..YYYYMM
+
+        Raises ValueError if the period format is invalid or if the start date
+        is later than the end date in a range.
+        """
+        predefined_periods = {
+            "this_month",
+            "prev_month",
+            "next_month",
+            "this_quarter",
+            "prev_quarter",
+            "next_quarter",
+            "this_year",
+            "prev_year",
+            "next_year",
+        }
+
+        if period in predefined_periods:
+            return period
+
+        if ".." in period:
+            parts = period.split("..")
+            if len(parts) != 2:
+                raise ValueError(
+                    f"Invalid period range format: '{period}'. "
+                    "Expected format: 'YYYYMMDD..YYYYMMDD' or 'YYYYMM..YYYYMM'."
+                )
+
+            start_str, end_str = parts
+            start_date = FinancialMutation._parse_date(start_str)
+            end_date = FinancialMutation._parse_date(end_str)
+
+            if start_date is None:
+                raise ValueError(
+                    f"Invalid start date format: '{start_str}'. "
+                    "Expected YYYYMMDD or YYYYMM."
+                )
+            if end_date is None:
+                raise ValueError(
+                    f"Invalid end date format: '{end_str}'. "
+                    "Expected YYYYMMDD or YYYYMM."
+                )
+            if start_date > end_date:
+                raise ValueError(
+                    f"Invalid period range: start date '{start_str}' "
+                    f"is later than end date '{end_str}'."
+                )
+
+            return period
+
+        # Single date - validate and format as range
+        parsed_date = FinancialMutation._parse_date(period)
+        if parsed_date is None:
+            raise ValueError(
+                f"Invalid period format: '{period}'. Expected YYYYMMDD, YYYYMM, "
+                "a date range (YYYYMMDD..YYYYMMDD), or a predefined period "
+                "(this_month, prev_month, next_month, this_quarter, prev_quarter, "
+                "next_quarter, this_year, prev_year, next_year)."
+            )
+
+        return f"{period}..{period}"
+
     @classmethod
     def search(
         cls,
@@ -114,14 +197,18 @@ class FinancialMutation(MoneybirdModel):
         """
         Search for financial mutations using the standard list endpoint. The query_string
         should be in the format 'key:value,key:value' (e.g., 'state:open,amount:>100').
-        If the period is a single day (YYYYMMDD), it will be formatted as a range.
+
+        Period can be:
+        - A predefined period: this_month, prev_month, next_month, this_quarter,
+          prev_quarter, next_quarter, this_year, prev_year, next_year
+        - A single date in YYYYMMDD or YYYYMM format (will be formatted as a range)
+        - A date range: YYYYMMDD..YYYYMMDD or YYYYMM..YYYYMM
+
         A specific 'period' is required to avoid the 'Too many mutations' error.
         If no period is provided, it defaults to the current day.
         """
-        formatted_period = (
-            f"{period}..{period}" if len(period) == 8 and ".." not in period else period
-        )
-        filter_parts = [f"period:{formatted_period}"]
+        formatted_period = cls._validate_period(period) if period else None
+        filter_parts = [f"period:{formatted_period}"] if formatted_period else []
 
         if query_string and re.match(
             r"^[\w]+:[\w\s\-\.]+(?:,[\w]+:[\w\s\-\.]+)*$", query_string
