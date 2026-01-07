@@ -35,7 +35,7 @@ def fixture_tax_rates_data() -> TaxRateData:
     ]
 
 
-def test_all(mocker: MockType, tax_rates_data: TaxRateData):
+def test_list_all_rates(mocker: MockType, tax_rates_data: TaxRateData):
     mock_get = mocker.patch("moneysnake.tax_rate.http_get", return_value=tax_rates_data)
 
     rates = TaxRate.list_all_rates()
