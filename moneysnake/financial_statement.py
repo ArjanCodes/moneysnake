@@ -1,14 +1,14 @@
-from typing import Any, Self
+from typing import Any
 
 from pydantic import Field, field_validator
 
 from moneysnake.client import http_patch, http_post
 
 from .financial_mutation import FinancialMutation
-from .model import MoneybirdModel, ensure_list_of
+from .model import Deletable, MoneybirdModel, Saveable, ensure_list_of
 
 
-class FinancialStatement(MoneybirdModel):
+class FinancialStatement(Saveable, Deletable, MoneybirdModel):
     """
     Represents a financial statement in Moneybird.
     """
@@ -53,19 +53,8 @@ class FinancialStatement(MoneybirdModel):
             )
         self.update(data)
 
-    def load(self, id: int) -> None:
-        raise NotImplementedError(
-            "Financial statements cannot be loaded from Moneybird."
-        )
-
     def add_financial_mutation(self, financial_mutation: FinancialMutation) -> None:
         """
         Add a financial mutation to the financial statement.
         """
         self.financial_mutations.append(financial_mutation)
-
-    @classmethod
-    def find_by_id(cls: type[Self], id: int) -> Self:
-        raise NotImplementedError(
-            "Financial statements cannot be loaded from Moneybird."
-        )

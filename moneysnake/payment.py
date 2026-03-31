@@ -4,6 +4,7 @@ from .model import MoneybirdModel
 class Payment(MoneybirdModel):
     """
     Represents a payment in Moneybird.
+    Payments are managed through their parent invoice, not directly.
     """
 
     payment_date: str | None = None
@@ -15,13 +16,3 @@ class Payment(MoneybirdModel):
     transaction_identifier: str | None = None
     ledger_account_id: int | None = None
     invoice_id: int | None = None
-
-    def save(self) -> None:
-        raise NotImplementedError(
-            "Payments cannot be saved directly. Refer to the invoice that the payment is for."
-        )
-
-    def delete(self) -> None:
-        raise NotImplementedError(
-            "Payments cannot be deleted directly. Refer to the invoice that the payment is for."
-        )

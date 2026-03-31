@@ -1,9 +1,9 @@
-from typing import Any, cast
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .model import MoneybirdModel, ensure_list_of
-from .client import http_delete, http_get, http_patch, http_post
+from .client import http_delete, http_patch, http_post, paginate
+from .model import CrudModel, ensure_list_of
 from .payment import Payment
 
 
@@ -27,11 +27,8 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
                 setattr(self, key, value)
 
 
-# External sales invoices don't have custom fields, so we use MoneybirdModel
-# instead of CustomFieldModel.
 
-
-class ExternalSalesInvoice(MoneybirdModel):
+class ExternalSalesInvoice(CrudModel):
     """
     Represents an external sales invoice in Moneybird.
     """
@@ -127,17 +124,11 @@ class ExternalSalesInvoice(MoneybirdModel):
         """
         List all external sales invoices for a contact.
         """
-        data = http_get(
-            path=f"{self.endpoint}s/?filter=contact_id:{contact_id}&state:{state}&period:{period}"
+        data = paginate(
+            f"{self.endpoint}s",
+            params={"filter": f"contact_id:{contact_id},state:{state},period:{period}"},
         )
-
-        data_list = cast(list[dict[str, Any]], data)
-
-        invoices: list[ExternalSalesInvoice] = []
-        for invoice_data in data_list:
-            invoice_obj = ExternalSalesInvoice(**invoice_data)
-            invoices.append(invoice_obj)
-        return invoices
+        return [ExternalSalesInvoice(**item) for item in data]
 
     def create_payment(self, payment: Payment) -> None:
         """

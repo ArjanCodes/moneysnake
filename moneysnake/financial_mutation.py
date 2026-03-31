@@ -5,8 +5,8 @@ from typing import Any, Self
 
 from pydantic import Field
 
-from .client import http_delete, http_get, http_patch
-from .model import MoneybirdModel
+from .client import http_delete, http_patch, paginate
+from .model import Loadable, MoneybirdModel
 
 
 class LinkBookingType(Enum):
@@ -37,7 +37,7 @@ class UnlinkBookingType(Enum):
     Payment = auto()
 
 
-class FinancialMutation(MoneybirdModel):
+class FinancialMutation(Loadable, MoneybirdModel):
     """
     Represents a financial mutation in Moneybird.
     """
@@ -65,14 +65,6 @@ class FinancialMutation(MoneybirdModel):
     account_servicer_transaction_id: str | None = None
     payments: list[dict[str, Any]] = Field(default_factory=list)
     ledger_account_bookings: list[dict[str, Any]] = Field(default_factory=list)
-
-    # Disable create, update and delete methods for financial mutations as they don't
-    # exist in the Moneybird API.
-    def save(self) -> None:
-        raise NotImplementedError("Financial mutations cannot be saved in Moneybird.")
-
-    def delete(self) -> None:
-        raise NotImplementedError("Financial mutations cannot be deleted in Moneybird.")
 
     def book_payment(
         self,
@@ -109,7 +101,7 @@ class FinancialMutation(MoneybirdModel):
     def search(
         cls,
         query_string: str | None = None,
-        period: str | None = datetime.now().strftime("%Y%m%d"),
+        period: str = datetime.now().strftime("%Y%m%d"),
         financial_account_id: str | None = None,
     ) -> list[Self]:
         """
@@ -136,13 +128,5 @@ class FinancialMutation(MoneybirdModel):
 
         params = {"filter": filter_val}
 
-        results = http_get("financial_mutations", params=params)
+        results = paginate("financial_mutations", params=params)
         return [cls(**result) for result in results]
-
-    @classmethod
-    def update_by_id(cls: type[Self], id: int, data: dict[str, Any]) -> Self:
-        raise NotImplementedError("Financial mutations cannot be updated in Moneybird.")
-
-    @classmethod
-    def delete_by_id(cls: type[Self], id: int) -> Self:
-        raise NotImplementedError("Financial mutations cannot be deleted in Moneybird.")
