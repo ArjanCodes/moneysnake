@@ -1,7 +1,10 @@
 from typing import Any
+
 from pydantic import BaseModel, field_validator
+
 from .client import http_get
 from .custom_field_model import CustomFieldModel
+from .model import ensure_list_of
 
 
 class ContactPerson(BaseModel):
@@ -59,13 +62,4 @@ class Contact(CustomFieldModel):
     ) -> list[ContactPerson] | None:
         if value is None:
             return None
-
-        contact_people: list[ContactPerson] = []
-
-        for person in value:
-            if isinstance(person, ContactPerson):
-                contact_people.append(person)
-            else:
-                contact_people.append(ContactPerson(**person))
-
-        return contact_people
+        return ensure_list_of(ContactPerson, value)

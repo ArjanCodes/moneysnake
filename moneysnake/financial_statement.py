@@ -5,7 +5,7 @@ from pydantic import Field, field_validator
 from moneysnake.client import http_patch, http_post
 
 from .financial_mutation import FinancialMutation
-from .model import MoneybirdModel
+from .model import MoneybirdModel, ensure_list_of
 
 
 class FinancialStatement(MoneybirdModel):
@@ -26,16 +26,7 @@ class FinancialStatement(MoneybirdModel):
     ) -> list[FinancialMutation] | None:
         if value is None:
             return None
-
-        financial_mutations: list[FinancialMutation] = []
-
-        for financial_mutation in value:
-            if isinstance(financial_mutation, FinancialMutation):
-                financial_mutations.append(financial_mutation)
-            else:
-                financial_mutations.append(FinancialMutation(**financial_mutation))
-
-        return financial_mutations
+        return ensure_list_of(FinancialMutation, value)
 
     def save(self) -> None:
         """

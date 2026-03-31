@@ -63,8 +63,8 @@ class FinancialMutation(MoneybirdModel):
     financial_statement_id: str | None = None
     processed_at: str | None = None
     account_servicer_transaction_id: str | None = None
-    payments: list[Any] = Field(default_factory=list)
-    ledger_account_bookings: list[Any] = Field(default_factory=list)
+    payments: list[dict[str, Any]] = Field(default_factory=list)
+    ledger_account_bookings: list[dict[str, Any]] = Field(default_factory=list)
 
     # Disable create, update and delete methods for financial mutations as they don't
     # exist in the Moneybird API.
