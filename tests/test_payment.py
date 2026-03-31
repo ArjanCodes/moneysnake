@@ -35,8 +35,9 @@ def test_payment(payment_data: dict[str, Any], mocker: MockType):
     assert payment.price == 363.0
     assert isinstance(payment.price, float)
 
-    with pytest.raises(NotImplementedError):
-        payment.save()
 
-    with pytest.raises(NotImplementedError):
-        payment.delete()
+def test_payment_has_no_save_or_delete(payment_data: dict[str, Any]):
+    """Payment should not have save() or delete() methods."""
+    payment = Payment(**payment_data)
+    assert not hasattr(payment, "save")
+    assert not hasattr(payment, "delete")

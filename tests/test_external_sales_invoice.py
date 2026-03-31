@@ -232,8 +232,8 @@ def test_list_all_by_contact_id(mocker: MockType, invoice_data: dict[str, Any]):
     """
     Test listing all external sales invoices for a contact.
     """
-    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_get")
-    mock_make_request.return_value = [invoice_data]
+    mock_paginate = mocker.patch("moneysnake.external_sales_invoice.paginate")
+    mock_paginate.return_value = [invoice_data]
     invoices = ExternalSalesInvoice().list_all_by_contact_id(433546254856750888)
     assert len(invoices) == 1
 

@@ -1,10 +1,10 @@
 from typing import Self
 
-from .client import http_get
-from .model import MoneybirdModel
+from .client import paginate
+from .model import Loadable, MoneybirdModel
 
 
-class TaxRate(MoneybirdModel):
+class TaxRate(Loadable, MoneybirdModel):
     """
     Represents a Tax Rate in Moneybird.
     """
@@ -24,7 +24,7 @@ class TaxRate(MoneybirdModel):
         """
         List all available tax rates for the administration.
         """
-        data = http_get("tax_rates")
+        data = paginate("tax_rates")
         return [cls(**rate) for rate in data]
 
     @classmethod
@@ -32,7 +32,7 @@ class TaxRate(MoneybirdModel):
         """
         List all sales tax rates.
         """
-        data = http_get("tax_rates?filter=tax_rate_type:sales_invoice")
+        data = paginate("tax_rates", params={"filter": "tax_rate_type:sales_invoice"})
         return [cls(**rate) for rate in data]
 
     @classmethod
@@ -40,7 +40,8 @@ class TaxRate(MoneybirdModel):
         """
         Find sales tax rates by country.
         """
-        data = http_get(
-            f"tax_rates?filter=country:{country},tax_rate_type:sales_invoice"
+        data = paginate(
+            "tax_rates",
+            params={"filter": f"country:{country},tax_rate_type:sales_invoice"},
         )
         return [cls(**rate) for rate in data]

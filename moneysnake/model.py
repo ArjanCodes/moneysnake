@@ -33,9 +33,30 @@ class MoneybirdModel(BaseModel):
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(exclude_none=True)
 
+    def update(self, data: dict[str, Any]) -> None:
+        # Use model_validate to ensure field validators run
+        validated = self.model_validate({**self.model_dump(), **data})
+        # Copy validated field values directly (not via model_dump which converts to dicts)
+        for key in self.__class__.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
+
+
+class Loadable(MoneybirdModel):
+    """Mixin that adds read capabilities (load, find_by_id)."""
+
     def load(self, id: int) -> None:
         data = http_get(f"{self.endpoint}s/{id}")
         self.update(data)
+
+    @classmethod
+    def find_by_id(cls: type[Self], id: int) -> Self:
+        entity = cls(id=id)
+        entity.load(id)
+        return entity
+
+
+class Saveable(MoneybirdModel):
+    """Mixin that adds create/update capabilities (save, update_by_id)."""
 
     def save(self) -> None:
         if self.id is None:
@@ -43,7 +64,6 @@ class MoneybirdModel(BaseModel):
                 f"{self.endpoint}s",
                 data={self.endpoint: self.to_dict()},
             )
-            # update the current object with the data
             self.update(data)
         else:
             data = http_patch(
@@ -52,26 +72,6 @@ class MoneybirdModel(BaseModel):
             )
             self.update(data)
 
-    def update(self, data: dict[str, Any]) -> None:
-        # Use model_validate to ensure field validators run
-        validated = self.model_validate({**self.model_dump(), **data})
-        # Copy validated field values directly (not via model_dump which converts to dicts)
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
-
-    def delete(self) -> None:
-        if not self.id:
-            raise ValueError(f"Cannot delete {self.__class__.__name__} without an id")
-        http_delete(f"{self.endpoint}s/{self.id}")
-        # remove the id from the object
-        self.id = None
-
-    @classmethod
-    def find_by_id(cls: type[Self], id: int) -> Self:
-        entity = cls(id=id)
-        entity.load(id)
-        return entity
-
     @classmethod
     def update_by_id(cls: type[Self], id: int, data: dict[str, Any]) -> Self:
         entity = cls(id=id)
@@ -79,8 +79,22 @@ class MoneybirdModel(BaseModel):
         entity.save()
         return entity
 
+
+class Deletable(MoneybirdModel):
+    """Mixin that adds delete capabilities (delete, delete_by_id)."""
+
+    def delete(self) -> None:
+        if not self.id:
+            raise ValueError(f"Cannot delete {self.__class__.__name__} without an id")
+        http_delete(f"{self.endpoint}s/{self.id}")
+        self.id = None
+
     @classmethod
     def delete_by_id(cls: type[Self], id: int) -> Self:
         entity = cls(id=id)
         entity.delete()
         return entity
+
+
+class CrudModel(Loadable, Saveable, Deletable, MoneybirdModel):
+    """Full CRUD model with load, save, and delete capabilities."""

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from .model import MoneybirdModel
+
+from .model import CrudModel
 
 
 class CustomField(BaseModel):
@@ -7,7 +8,7 @@ class CustomField(BaseModel):
     value: str | None = None
 
 
-class CustomFieldModel(MoneybirdModel):
+class CustomFieldModel(CrudModel):
     custom_fields: list[CustomField] = []
 
     def get_custom_field(self, field_id: int) -> str | None:
