@@ -74,9 +74,6 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -85,7 +82,7 @@ jobs:
           sed -i "s/^version = .*/version = \"${{ needs.details.outputs.new_version }}\"/" pyproject.toml
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --frozen
 
       - name: Run stub generation
         run: uv run stubgen ${{ env.PACKAGE_NAME }} -o .
