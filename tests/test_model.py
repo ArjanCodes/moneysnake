@@ -1,7 +1,7 @@
 from pytest_mock import MockType
 from pydantic import field_validator
 from typing import Any
-from moneysnake.model import MoneybirdModel
+from moneysnake.model import CrudModel, MoneybirdModel
 
 
 class NestedModel(MoneybirdModel):
@@ -10,7 +10,7 @@ class NestedModel(MoneybirdModel):
     name: str | None = None
 
 
-class ModelWithValidator(MoneybirdModel):
+class ModelWithValidator(CrudModel):
     """A model with a field validator for testing update validation."""
 
     items: list[NestedModel] | None = None
@@ -72,7 +72,7 @@ def test_load(mocker: MockType):
     Test that the load method fetches the data from the API and updates the model.
     """
     mocker.patch("moneysnake.model.http_get", return_value={"id": 1})
-    model = MoneybirdModel()
+    model = CrudModel()
     model.load(1)
     assert model.id == 1
 
@@ -82,7 +82,7 @@ def test_save_create(mocker: MockType):
     Test that the save method creates a new model if the model has no id.
     """
     mocker.patch("moneysnake.model.http_post", return_value={"id": 1})
-    model = MoneybirdModel()
+    model = CrudModel()
     model.save()
     assert model.id == 1
 
@@ -93,7 +93,7 @@ def test_save_update(mocker: MockType):
     """
     mocker.patch("moneysnake.model.http_post", return_value={"id": 1})
     mocker.patch("moneysnake.model.http_patch", return_value={"id": 1})
-    model = MoneybirdModel(id=1)
+    model = CrudModel(id=1)
     model.save()
     assert model.id == 1
 
@@ -103,7 +103,7 @@ def test_delete(mocker: MockType):
     Test that the delete method removes the id from the model.
     """
     mocker.patch("moneysnake.model.http_delete")
-    model = MoneybirdModel(id=1)
+    model = CrudModel(id=1)
     model.delete()
     assert model.id is None
 
@@ -132,7 +132,7 @@ def test_find_by_id(mocker: MockType):
     Test that the find_by_id method fetches the data from the API and returns a model.
     """
     mocker.patch("moneysnake.model.http_get", return_value={"id": 1})
-    model = MoneybirdModel.find_by_id(1)
+    model = CrudModel.find_by_id(1)
     assert model.id == 1
 
 
@@ -141,7 +141,7 @@ def test_update_by_id(mocker: MockType):
     Test that the update_by_id method fetches the data from the API and updates the model.
     """
     mocker.patch("moneysnake.model.http_patch", return_value={"id": 1})
-    model = MoneybirdModel.update_by_id(1, {"id": 1})
+    model = CrudModel.update_by_id(1, {"id": 1})
     assert model.id == 1
 
 
@@ -150,5 +150,5 @@ def test_delete_by_id(mocker: MockType):
     Test that the delete_by_id method returns a model with no id.
     """
     mocker.patch("moneysnake.model.http_delete")
-    model = MoneybirdModel.delete_by_id(1)
+    model = CrudModel.delete_by_id(1)
     assert model.id is None

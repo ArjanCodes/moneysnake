@@ -9,7 +9,7 @@ def test_search_financial_mutations(mocker: MockType):
     """
     Test searching for financial mutations.
     """
-    mock_http_get = mocker.patch("moneysnake.financial_mutation.http_get")
+    mock_http_get = mocker.patch("moneysnake.financial_mutation.paginate")
 
     # Mock response data
     mock_data = [
@@ -50,7 +50,7 @@ def test_search_financial_mutations_simple_period(mocker: MockType):
     """
     Test searching with a period that doesn't need formatting.
     """
-    mock_http_get = mocker.patch("moneysnake.financial_mutation.http_get")
+    mock_http_get = mocker.patch("moneysnake.financial_mutation.paginate")
     mock_http_get.return_value = []
 
     FinancialMutation.search(
@@ -75,7 +75,7 @@ def test_search_financial_mutations_default_period(mocker: MockType):
     importlib.reload(moneysnake.financial_mutation)
     from moneysnake.financial_mutation import FinancialMutation as FM
 
-    mock_http_get = mocker.patch("moneysnake.financial_mutation.http_get")
+    mock_http_get = mocker.patch("moneysnake.financial_mutation.paginate")
     mock_http_get.return_value = []
 
     FM.search(query_string="query:test")
