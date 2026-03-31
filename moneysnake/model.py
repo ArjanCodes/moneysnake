@@ -8,7 +8,9 @@ T = TypeVar("T", bound=BaseModel)
 
 
 def ensure_list_of(model_cls: type[T], value: list) -> list[T]:
-    return [item if isinstance(item, model_cls) else model_cls(**item) for item in value]
+    return [
+        item if isinstance(item, model_cls) else model_cls(**item) for item in value
+    ]
 
 
 class MoneybirdModel(BaseModel):
@@ -54,7 +56,7 @@ class MoneybirdModel(BaseModel):
         # Use model_validate to ensure field validators run
         validated = self.model_validate({**self.model_dump(), **data})
         # Copy validated field values directly (not via model_dump which converts to dicts)
-        for key in self.model_fields:
+        for key in self.__class__.model_fields:
             object.__setattr__(self, key, getattr(validated, key))
 
     def delete(self) -> None:
