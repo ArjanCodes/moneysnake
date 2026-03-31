@@ -1,11 +1,13 @@
 from typing import Any
+
 import pytest
+from pytest_mock import MockType
+
 from moneysnake.financial_mutation import (
     FinancialMutation,
     LinkBookingType,
     UnlinkBookingType,
 )
-from pytest_mock import MockType
 
 
 @pytest.fixture(name="mutation_data")
@@ -61,7 +63,7 @@ def test_remove_payment(mocker: MockType, mutation_data: dict[str, Any]):
     """
     Test removing a payment from a financial mutation.
     """
-    mock_make_request = mocker.patch("moneysnake.financial_mutation.http_patch")
+    mock_make_request = mocker.patch("moneysnake.financial_mutation.http_delete")
     mutation = FinancialMutation(**mutation_data)
     mutation.remove_payment(123, UnlinkBookingType.LedgerAccountBooking)
     mock_make_request.assert_called_once_with(
