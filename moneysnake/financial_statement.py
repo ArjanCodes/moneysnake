@@ -1,10 +1,11 @@
 from typing import Any, Self
+
 from pydantic import Field, field_validator
 
 from moneysnake.client import http_patch, http_post
 
-from .model import MoneybirdModel
 from .financial_mutation import FinancialMutation
+from .model import MoneybirdModel
 
 
 class FinancialStatement(MoneybirdModel):
@@ -38,7 +39,7 @@ class FinancialStatement(MoneybirdModel):
 
     def save(self) -> None:
         """
-        Save the external sales invoice. Overrides the save method in MoneybirdModel.
+        Save the financial statement. Overrides the save method in MoneybirdModel.
         """
         financial_statement_data = self.to_dict()
 
