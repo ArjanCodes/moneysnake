@@ -1,9 +1,8 @@
-from pydantic import Field, field_validator
 from typing import Any, cast
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
-from .model import MoneybirdModel
+from .model import MoneybirdModel, ensure_list_of
 from .client import http_delete, http_get, http_patch, http_post
 from .payment import Payment
 
@@ -56,19 +55,7 @@ class ExternalSalesInvoice(MoneybirdModel):
     ) -> list[Payment] | None:
         if value is None:
             return None
-
-        return [p if isinstance(p, Payment) else Payment(**p) for p in value]
-
-    def update(self, data: dict[str, Any]) -> None:
-        """
-        Update the external sales invoice. Overrides the update method in MoneybirdModel.
-        """
-        super().update(data)
-        if self.payments is not None:
-            pass
-            # self.payments = [
-            #     Payment.model_dump(p) if isinstance(p, dict) else p for p in self.payments
-            # ]
+        return ensure_list_of(Payment, value)
 
     def save(self) -> None:
         """

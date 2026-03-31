@@ -72,32 +72,26 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
+      - name: Set project version
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Set project version with Poetry
-        run: |
-          poetry version ${{ needs.details.outputs.new_version }}
+          sed -i "s/^version = .*/version = \"${{ needs.details.outputs.new_version }}\"/" pyproject.toml
 
       - name: Install dependencies
-        run: poetry install --sync --no-interaction
+        run: uv sync --frozen
 
       - name: Run stub generation
-        run: poetry run stubgen ${{ env.PACKAGE_NAME }} -o .
+        run: uv run stubgen ${{ env.PACKAGE_NAME }} -o .
 
       - name: Build source and wheel distribution
-        run: |
-          poetry build
+        run: uv build
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
@@ -112,7 +106,7 @@ jobs:
       id-token: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -133,7 +127,7 @@ jobs:
           fetch-depth: 0 # Fetch full history to avoid issues with tags and branches
 
       - name: Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
