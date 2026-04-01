@@ -1,6 +1,6 @@
 [project]
 name = "moneysnake"
-version = "0.3.0"
+version = "0.4.0"
 description = "Moneybird SDK for Python"
 authors = [{ name = "ArjanCodes" }]
 license = { text = "MIT" }

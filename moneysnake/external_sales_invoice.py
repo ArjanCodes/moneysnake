@@ -3,7 +3,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from .client import http_delete, http_patch, http_post, paginate
-from .model import CrudModel, ensure_list_of
+from .model import CrudModel, Synchronizable, ensure_list_of
 from .payment import Payment
 
 
@@ -28,7 +28,7 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
 
 
 
-class ExternalSalesInvoice(CrudModel):
+class ExternalSalesInvoice(Synchronizable, CrudModel):
     """
     Represents an external sales invoice in Moneybird.
     """

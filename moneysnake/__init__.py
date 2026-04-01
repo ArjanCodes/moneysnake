@@ -3,6 +3,7 @@ from .client import MB_VERSION_ID as MB_VERSION_ID
 from .client import make_request as make_request
 from .client import paginate as paginate
 from .client import set_admin_id as set_admin_id
+from .client import set_max_retries as set_max_retries
 from .client import set_timeout as set_timeout
 from .client import set_token as set_token
 from .contact import Contact as Contact
@@ -23,7 +24,12 @@ from .model import Deletable as Deletable
 from .model import Loadable as Loadable
 from .model import MoneybirdModel as MoneybirdModel
 from .model import Saveable as Saveable
+from .model import Synchronizable as Synchronizable
 from .payment import Payment as Payment
+from .sales_invoice import SalesInvoice as SalesInvoice
+from .sales_invoice import (
+    SalesInvoiceDetailsAttribute as SalesInvoiceDetailsAttribute,
+)
 from .tax_rate import TaxRate as TaxRate
 
 __all__ = [
@@ -32,6 +38,7 @@ __all__ = [
     "make_request",
     "paginate",
     "set_admin_id",
+    "set_max_retries",
     "set_timeout",
     "set_token",
     "Contact",
@@ -50,6 +57,9 @@ __all__ = [
     "MoneybirdRateLimitError",
     "MoneybirdValidationError",
     "Payment",
+    "SalesInvoice",
+    "SalesInvoiceDetailsAttribute",
     "Saveable",
+    "Synchronizable",
     "TaxRate",
 ]

@@ -2,7 +2,7 @@ from typing import Any, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-from .client import http_delete, http_get, http_patch, http_post
+from .client import http_delete, http_get, http_patch, http_post, paginate
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -94,6 +94,44 @@ class Deletable(MoneybirdModel):
         entity = cls(id=id)
         entity.delete()
         return entity
+
+
+class Synchronizable(MoneybirdModel):
+    """Mixin that adds synchronization endpoints for efficient bulk data access."""
+
+    @classmethod
+    def sync_list(cls: type[Self], filter: str | None = None) -> list[dict[str, Any]]:
+        """Get all IDs and versions for this resource.
+
+        Returns a list of dicts with 'id' and 'version' keys, useful for
+        checking which records have changed since last sync.
+        """
+        params: dict[str, str] = {}
+        if filter:
+            params["filter"] = filter
+        return paginate(f"{cls._sync_endpoint()}s/synchronization", params=params or None)
+
+    @classmethod
+    def sync_fetch(cls: type[Self], ids: list[int]) -> list[Self]:
+        """Fetch full records by IDs (max 100 per request).
+
+        Use sync_list() first to get IDs, then fetch changed records in bulk.
+        """
+        if len(ids) > 100:
+            raise ValueError("sync_fetch supports a maximum of 100 IDs per request")
+        data = http_post(
+            f"{cls._sync_endpoint()}s/synchronization",
+            data={"ids": ids},
+        )
+        if not isinstance(data, list):
+            return []
+        return [cls(**item) for item in data]
+
+    @classmethod
+    def _sync_endpoint(cls) -> str:
+        """Derive the endpoint name for synchronization."""
+        instance = cls()
+        return instance.endpoint
 
 
 class CrudModel(Loadable, Saveable, Deletable, MoneybirdModel):

@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator
 
 from .client import http_get
 from .custom_field_model import CustomFieldModel
-from .model import ensure_list_of
+from .model import Synchronizable, ensure_list_of
 
 
 class ContactPerson(BaseModel):
@@ -12,7 +12,7 @@ class ContactPerson(BaseModel):
     lastname: str | None = None
 
 
-class Contact(CustomFieldModel):
+class Contact(Synchronizable, CustomFieldModel):
     company_name: str | None = None
     address1: str | None = None
     address2: str | None = None
