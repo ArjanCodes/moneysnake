@@ -12,18 +12,60 @@ from moneysnake.sales_invoice import (
 
 @pytest.fixture(name="invoice_data")
 def fixture_invoice_data() -> dict[str, Any]:
+    """Full sales invoice response matching Moneybird OpenAPI sales_invoice_response schema."""
     return {
         "id": "550000000000000001",
         "administration_id": 123,
         "contact_id": "550000000000000002",
+        "contact": {
+            "id": "550000000000000002",
+            "administration_id": 123,
+            "company_name": "Acme B.V.",
+            "firstname": None,
+            "lastname": None,
+            "address1": None,
+            "address2": None,
+            "zipcode": None,
+            "city": None,
+            "country": "NL",
+            "phone": None,
+            "delivery_method": "Email",
+            "customer_id": "1",
+            "tax_number": None,
+            "chamber_of_commerce": None,
+            "bank_account": None,
+            "attention": None,
+            "email": None,
+            "email_ubl": False,
+            "send_invoices_to_attention": None,
+            "send_invoices_to_email": None,
+            "send_estimates_to_attention": None,
+            "send_estimates_to_email": None,
+            "sepa_active": False,
+            "sepa_iban": None,
+            "sepa_iban_account_name": None,
+            "sepa_bic": None,
+            "sepa_mandate_id": None,
+            "sepa_mandate_date": None,
+            "sepa_sequence_type": "RCUR",
+            "si_identifier": None,
+            "si_identifier_type": None,
+            "created_at": "2026-03-31T10:00:00.000Z",
+            "updated_at": "2026-03-31T10:00:00.000Z",
+            "version": 1711872000,
+        },
         "contact_person_id": None,
+        "contact_person": None,
         "invoice_id": "2026-0001",
+        "recurring_sales_invoice_id": None,
+        "subscription_id": None,
         "workflow_id": "550000000000000010",
         "document_style_id": "550000000000000011",
         "identity_id": "550000000000000012",
         "draft_id": None,
+        "original_estimate_id": None,
+        "original_sales_invoice_id": None,
         "state": "draft",
-        "paused": False,
         "invoice_date": "2026-03-31",
         "due_date": "2026-04-30",
         "payment_conditions": "Net 30",
@@ -33,7 +75,9 @@ def fixture_invoice_data() -> dict[str, Any]:
         "language": "nl",
         "currency": "EUR",
         "discount": None,
+        "first_due_interval": None,
         "prices_are_incl_tax": False,
+        "paused": False,
         "total_paid": "0.0",
         "total_unpaid": "121.0",
         "total_unpaid_base": "121.0",
@@ -47,28 +91,36 @@ def fixture_invoice_data() -> dict[str, Any]:
         "created_at": "2026-03-31T10:00:00.000Z",
         "updated_at": "2026-03-31T10:00:00.000Z",
         "version": 1711872000,
-        "url": "https://moneybird.com/123/sales_invoices/abc123",
-        "payment_url": "https://moneybird.com/pay/abc123",
-        "public_view_code": "abc123",
         "marked_dubious_on": None,
         "marked_uncollectible_on": None,
         "reminder_count": 0,
         "next_reminder": None,
-        "original_estimate_id": None,
-        "recurring_sales_invoice_id": None,
-        "subscription_id": None,
+        "url": "https://moneybird.com/123/sales_invoices/abc123",
+        "payment_url": "https://moneybird.com/pay/abc123",
+        "public_view_code": "abc123",
+        "public_view_code_expires_at": None,
         "details": [
             {
                 "id": "550000000000000100",
-                "description": "Consulting services",
-                "period": None,
-                "price": "100.0",
-                "amount": "1 x",
+                "administration_id": 123,
                 "tax_rate_id": "550000000000000200",
                 "ledger_account_id": "550000000000000201",
                 "project_id": None,
                 "product_id": None,
+                "amount": "1 x",
+                "amount_decimal": "1.0",
+                "description": "Consulting services",
+                "price": "100.0",
+                "period": None,
                 "row_order": 0,
+                "total_price_excl_tax_with_discount": "100.0",
+                "total_price_excl_tax_with_discount_base": "100.0",
+                "tax_report_reference": [],
+                "mandatory_tax_text": None,
+                "created_at": "2026-03-31T10:00:00.000Z",
+                "updated_at": "2026-03-31T10:00:00.000Z",
+                "is_optional": False,
+                "is_selected": True,
             }
         ],
         "payments": [],
@@ -76,37 +128,16 @@ def fixture_invoice_data() -> dict[str, Any]:
             {
                 "tax_rate_id": "550000000000000200",
                 "taxable_amount": "100.0",
+                "taxable_amount_base": "100.0",
                 "tax_amount": "21.0",
+                "tax_amount_base": "21.0",
             }
         ],
         "custom_fields": [],
         "notes": [],
         "attachments": [],
         "events": [],
-    }
-
-
-@pytest.fixture(name="payment_data")
-def fixture_payment_data() -> dict[str, Any]:
-    return {
-        "id": "550000000000000300",
-        "administration_id": 123,
-        "invoice_type": "SalesInvoice",
-        "invoice_id": "550000000000000001",
-        "financial_account_id": None,
-        "user_id": 999,
-        "payment_transaction_id": None,
-        "transaction_identifier": None,
-        "price": "121.0",
-        "price_base": "121.0",
-        "payment_date": "2026-03-31",
-        "credit_invoice_id": None,
-        "financial_mutation_id": None,
-        "ledger_account_id": "550000000000000400",
-        "linked_payment_id": None,
-        "manual_payment_action": "bank_transfer",
-        "created_at": "2026-03-31T10:00:00.000Z",
-        "updated_at": "2026-03-31T10:00:00.000Z",
+        "time_entries": [],
     }
 
 
@@ -160,7 +191,9 @@ def test_update_by_id(mocker: MockType, invoice_data: dict[str, Any]):
 
 def test_add_detail(invoice_data: dict[str, Any]):
     invoice = SalesInvoice(**invoice_data)
-    detail = SalesInvoiceDetailsAttribute(description="New item", price="50.0", amount="2")
+    detail = SalesInvoiceDetailsAttribute(
+        description="New item", price="50.0", amount="2"
+    )
     invoice.add_detail(detail)
     assert len(invoice.details) == 2
 
@@ -200,7 +233,7 @@ def test_create_payment(
     invoice = SalesInvoice(**invoice_data)
     invoice.create_payment(Payment(**payment_data))
     assert len(invoice.payments) == 1
-    assert invoice.payments[0].id == 550000000000000300
+    assert invoice.payments[0].id == 433546310070568441
 
 
 def test_delete_payment(
@@ -212,7 +245,7 @@ def test_delete_payment(
     invoice.create_payment(Payment(**payment_data))
 
     mock_delete = mocker.patch("moneysnake.sales_invoice.http_delete")
-    invoice.delete_payment(550000000000000300)
+    invoice.delete_payment(433546310070568441)
     assert len(invoice.payments) == 0
     mock_delete.assert_called_once()
 
@@ -294,11 +327,15 @@ def test_register_payment(
 def test_download_pdf(mocker: MockType, invoice_data: dict[str, Any]):
     mock_response = mocker.Mock()
     mock_response.content = b"%PDF-1.4"
-    mock_get_raw = mocker.patch("moneysnake.sales_invoice.http_get_raw", return_value=mock_response)
+    mock_get_raw = mocker.patch(
+        "moneysnake.sales_invoice.http_get_raw", return_value=mock_response
+    )
     invoice = SalesInvoice(**invoice_data)
     result = invoice.download_pdf()
     assert result == b"%PDF-1.4"
-    mock_get_raw.assert_called_once_with("sales_invoices/550000000000000001/download_pdf")
+    mock_get_raw.assert_called_once_with(
+        "sales_invoices/550000000000000001/download_pdf"
+    )
 
 
 def test_download_ubl(mocker: MockType, invoice_data: dict[str, Any]):
@@ -349,7 +386,9 @@ def test_find_by_reference(mocker: MockType, invoice_data: dict[str, Any]):
 # --- Field validators ---
 
 
-def test_payments_converted_from_dicts(mocker: MockType, invoice_data: dict[str, Any], payment_data: dict[str, Any]):
+def test_payments_converted_from_dicts(
+    mocker: MockType, invoice_data: dict[str, Any], payment_data: dict[str, Any]
+):
     invoice_data["payments"] = [payment_data]
     mocker.patch("moneysnake.model.http_get", return_value=invoice_data)
     invoice = SalesInvoice.find_by_id(550000000000000001)

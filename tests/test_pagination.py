@@ -4,7 +4,9 @@ from moneysnake.client import paginate
 
 def test_paginate_single_page(mocker: MockType):
     """When results fit in one page, return them all."""
-    mock_get = mocker.patch("moneysnake.client.http_get", return_value=[{"id": 1}, {"id": 2}])
+    mock_get = mocker.patch(
+        "moneysnake.client.http_get", return_value=[{"id": 1}, {"id": 2}]
+    )
 
     results = paginate("contacts", per_page=100)
 

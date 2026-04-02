@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import httpx
 import pytest
 from pytest_mock import MockType
@@ -21,10 +19,13 @@ def _reset_retries():
     client.max_retries_ = original
 
 
-def _make_response(status_code: int, json_data: dict | None = None, headers: dict | None = None) -> httpx.Response:
+def _make_response(
+    status_code: int, json_data: dict | None = None, headers: dict | None = None
+) -> httpx.Response:
     content = b""
     if json_data is not None:
         import json
+
         content = json.dumps(json_data).encode()
     resp = httpx.Response(
         status_code,
@@ -43,7 +44,9 @@ class TestRetryOn429:
             _make_response(429, headers={"Retry-After": "0"}),
             _make_response(200, json_data={"id": 1}),
         ]
-        mock_request = mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        mock_request = mocker.patch(
+            "moneysnake.client.httpx.request", side_effect=responses
+        )
         result = make_request("contacts/1", method="get")
         assert result == {"id": 1}
         assert mock_request.call_count == 2
@@ -68,7 +71,9 @@ class TestRetryOn5xx:
             _make_response(500),
             _make_response(200, json_data={"id": 1}),
         ]
-        mock_request = mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        mock_request = mocker.patch(
+            "moneysnake.client.httpx.request", side_effect=responses
+        )
         result = make_request("contacts/1", method="get")
         assert result == {"id": 1}
         assert mock_request.call_count == 2
@@ -126,7 +131,9 @@ class TestNoRetryOnMutating5xx:
             _make_response(429, headers={"Retry-After": "1"}),
             _make_response(200, json_data={"id": 1}),
         ]
-        mock_request = mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        mock_request = mocker.patch(
+            "moneysnake.client.httpx.request", side_effect=responses
+        )
         result = make_request("contacts", method="post", data={"name": "test"})
         assert result == {"id": 1}
         assert mock_request.call_count == 2
@@ -184,7 +191,9 @@ class TestRetryBackoff:
         set_max_retries(1)
         mock_sleep = mocker.patch("moneysnake.client.time.sleep")
         responses = [
-            _make_response(429, headers={"Retry-After": "Wed, 21 Oct 2025 07:28:00 GMT"}),
+            _make_response(
+                429, headers={"Retry-After": "Wed, 21 Oct 2025 07:28:00 GMT"}
+            ),
             _make_response(200, json_data={"ok": True}),
         ]
         mocker.patch("moneysnake.client.httpx.request", side_effect=responses)

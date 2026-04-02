@@ -26,27 +26,37 @@ class TestSyncList:
         assert result[0]["id"] == 1
         mock_paginate.assert_called_once_with("contacts/synchronization", params=None)
 
-    def test_sync_list_with_filter(self, mocker: MockType, sync_ids: list[dict[str, Any]]):
+    def test_sync_list_with_filter(
+        self, mocker: MockType, sync_ids: list[dict[str, Any]]
+    ):
         mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
         Contact.sync_list(filter="state:active")
         mock_paginate.assert_called_once_with(
             "contacts/synchronization", params={"filter": "state:active"}
         )
 
-    def test_sync_list_sales_invoices(self, mocker: MockType, sync_ids: list[dict[str, Any]]):
+    def test_sync_list_sales_invoices(
+        self, mocker: MockType, sync_ids: list[dict[str, Any]]
+    ):
         mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
         result = SalesInvoice.sync_list()
         assert len(result) == 3
-        mock_paginate.assert_called_once_with("sales_invoices/synchronization", params=None)
+        mock_paginate.assert_called_once_with(
+            "sales_invoices/synchronization", params=None
+        )
 
-    def test_sync_list_external_sales_invoices(self, mocker: MockType, sync_ids: list[dict[str, Any]]):
+    def test_sync_list_external_sales_invoices(
+        self, mocker: MockType, sync_ids: list[dict[str, Any]]
+    ):
         mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
         ExternalSalesInvoice.sync_list()
         mock_paginate.assert_called_once_with(
             "external_sales_invoices/synchronization", params=None
         )
 
-    def test_sync_list_financial_mutations(self, mocker: MockType, sync_ids: list[dict[str, Any]]):
+    def test_sync_list_financial_mutations(
+        self, mocker: MockType, sync_ids: list[dict[str, Any]]
+    ):
         mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
         FinancialMutation.sync_list()
         mock_paginate.assert_called_once_with(
@@ -60,7 +70,9 @@ class TestSyncFetch:
             {"id": 1, "company_name": "Acme"},
             {"id": 2, "company_name": "Globex"},
         ]
-        mock_post = mocker.patch("moneysnake.model.http_post", return_value=contact_data)
+        mock_post = mocker.patch(
+            "moneysnake.model.http_post", return_value=contact_data
+        )
         result = Contact.sync_fetch([1, 2])
         assert len(result) == 2
         assert isinstance(result[0], Contact)
