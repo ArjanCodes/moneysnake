@@ -3,6 +3,7 @@ import time
 from typing import Any
 
 import httpx
+from httpx import Response
 
 from .exceptions import (
     MoneybirdAPIError,
@@ -43,8 +44,15 @@ def set_max_retries(max_retries: int) -> None:
     max_retries_ = max_retries
 
 
-def _is_retryable(status_code: int) -> bool:
-    return status_code == 429 or status_code >= 500
+_IDEMPOTENT_METHODS = frozenset({"get", "put", "delete", "head", "options"})
+
+
+def _is_retryable(status_code: int, method: str) -> bool:
+    if status_code == 429:
+        return True
+    if status_code >= 500 and method.lower() in _IDEMPOTENT_METHODS:
+        return True
+    return False
 
 
 def make_request(
@@ -75,10 +83,13 @@ def make_request(
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             last_exc = exc
-            if _is_retryable(response.status_code) and attempt < max_retries_:
+            if _is_retryable(response.status_code, method) and attempt < max_retries_:
                 retry_after = response.headers.get("Retry-After")
                 if retry_after:
-                    delay = int(retry_after) - int(time.time())
+                    try:
+                        delay = int(retry_after)
+                    except ValueError:
+                        delay = 2 ** attempt
                     delay = max(delay, 1)
                 else:
                     delay = 2 ** attempt
@@ -136,6 +147,18 @@ def make_request(
 
 def http_get(path: str, params: dict[str, Any] | None = None) -> Any:
     return make_request(path, method="get", params=params)
+
+
+def http_get_raw(path: str) -> Response:
+    """Perform a GET and return the raw httpx Response (for binary downloads)."""
+    headers = {
+        "Authorization": f"Bearer {token_}",
+    }
+    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
+    logger.debug("GET %s (raw)", fullpath)
+    response = httpx.get(fullpath, headers=headers, timeout=timeout_)
+    response.raise_for_status()
+    return response
 
 
 def http_post(path: str, data: dict[str, Any] | None = None) -> Any:

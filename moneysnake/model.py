@@ -130,8 +130,12 @@ class Synchronizable(MoneybirdModel):
     @classmethod
     def _sync_endpoint(cls) -> str:
         """Derive the endpoint name for synchronization."""
-        instance = cls()
-        return instance.endpoint
+        pattr = cls.__private_attributes__.get("_endpoint")
+        if pattr is not None and pattr.default is not None:
+            return pattr.default
+        return "".join(
+            "_" + c.lower() if c.isupper() else c for c in cls.__name__
+        ).lstrip("_")
 
 
 class CrudModel(Loadable, Saveable, Deletable, MoneybirdModel):

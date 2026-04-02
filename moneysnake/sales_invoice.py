@@ -2,7 +2,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .client import http_delete, http_get, http_patch, http_post, paginate
+from .client import http_delete, http_get, http_get_raw, http_patch, http_post, paginate
 from .custom_field_model import CustomFieldModel
 from .model import Synchronizable, ensure_list_of
 from .payment import Payment
@@ -24,9 +24,9 @@ class SalesInvoiceDetailsAttribute(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     def update(self, data: dict[str, Any]) -> None:
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        validated = self.model_validate({**self.model_dump(), **data})
+        for key in self.__class__.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
 
 
 class SalesInvoice(Synchronizable, CustomFieldModel):
@@ -190,11 +190,13 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
 
     def download_pdf(self) -> bytes:
         """Download the invoice PDF. Returns raw PDF bytes."""
-        return http_get(f"{self.endpoint}s/{self.id}/download_pdf")
+        response = http_get_raw(f"{self.endpoint}s/{self.id}/download_pdf")
+        return response.content
 
-    def download_ubl(self) -> Any:
-        """Download the invoice in UBL format."""
-        return http_get(f"{self.endpoint}s/{self.id}/download_ubl")
+    def download_ubl(self) -> bytes:
+        """Download the invoice in UBL format. Returns raw bytes."""
+        response = http_get_raw(f"{self.endpoint}s/{self.id}/download_ubl")
+        return response.content
 
     def pause(self) -> None:
         """Pause workflow reminders for this invoice."""

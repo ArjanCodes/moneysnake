@@ -292,20 +292,22 @@ def test_register_payment(
 
 
 def test_download_pdf(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_get = mocker.patch("moneysnake.sales_invoice.http_get")
-    mock_get.return_value = b"%PDF-1.4"
+    mock_response = mocker.Mock()
+    mock_response.content = b"%PDF-1.4"
+    mock_get_raw = mocker.patch("moneysnake.sales_invoice.http_get_raw", return_value=mock_response)
     invoice = SalesInvoice(**invoice_data)
     result = invoice.download_pdf()
     assert result == b"%PDF-1.4"
-    mock_get.assert_called_once_with("sales_invoices/550000000000000001/download_pdf")
+    mock_get_raw.assert_called_once_with("sales_invoices/550000000000000001/download_pdf")
 
 
 def test_download_ubl(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_get = mocker.patch("moneysnake.sales_invoice.http_get")
-    mock_get.return_value = "<xml>ubl</xml>"
+    mock_response = mocker.Mock()
+    mock_response.content = b"<xml>ubl</xml>"
+    mocker.patch("moneysnake.sales_invoice.http_get_raw", return_value=mock_response)
     invoice = SalesInvoice(**invoice_data)
     result = invoice.download_ubl()
-    assert result == "<xml>ubl</xml>"
+    assert result == b"<xml>ubl</xml>"
 
 
 # --- Lookup helpers ---
@@ -359,6 +361,18 @@ def test_details_converted_from_dicts(invoice_data: dict[str, Any]):
     invoice = SalesInvoice(**invoice_data)
     assert len(invoice.details) == 1
     assert isinstance(invoice.details[0], SalesInvoiceDetailsAttribute)
+
+
+def test_save_with_custom_fields(mocker: MockType, invoice_data: dict[str, Any]):
+    del invoice_data["id"]
+    invoice_data["custom_fields"] = [{"id": 1, "value": "foo"}]
+    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
+    mock_post.return_value = {"id": 550000000000000001, **invoice_data}
+    invoice = SalesInvoice(**invoice_data)
+    invoice.save()
+    call_data = mock_post.call_args[1]["data"]["sales_invoice"]
+    assert "custom_fields_attributes" in call_data
+    assert "custom_fields" not in call_data
 
 
 def test_endpoint_is_sales_invoice():

@@ -97,6 +97,41 @@ class TestRetryOn5xx:
         assert exc_info.value.status_code == 500
 
 
+class TestNoRetryOnMutating5xx:
+    def test_post_500_not_retried(self, mocker: MockType):
+        set_max_retries(3)
+        mock_request = mocker.patch(
+            "moneysnake.client.httpx.request",
+            return_value=_make_response(500),
+        )
+        with pytest.raises(MoneybirdAPIError):
+            make_request("contacts", method="post", data={"name": "test"})
+        assert mock_request.call_count == 1
+
+    def test_patch_502_not_retried(self, mocker: MockType):
+        set_max_retries(3)
+        mock_request = mocker.patch(
+            "moneysnake.client.httpx.request",
+            return_value=_make_response(502),
+        )
+        with pytest.raises(MoneybirdAPIError):
+            make_request("contacts/1", method="patch", data={"name": "test"})
+        assert mock_request.call_count == 1
+
+    def test_post_429_still_retried(self, mocker: MockType):
+        """429 rate limits should be retried regardless of HTTP method."""
+        set_max_retries(1)
+        mocker.patch("moneysnake.client.time.sleep")
+        responses = [
+            _make_response(429, headers={"Retry-After": "1"}),
+            _make_response(200, json_data={"id": 1}),
+        ]
+        mock_request = mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        result = make_request("contacts", method="post", data={"name": "test"})
+        assert result == {"id": 1}
+        assert mock_request.call_count == 2
+
+
 class TestNoRetryOnClientErrors:
     def test_404_not_retried(self, mocker: MockType):
         set_max_retries(3)
@@ -137,16 +172,24 @@ class TestRetryBackoff:
     def test_retry_after_header_respected(self, mocker: MockType):
         set_max_retries(1)
         mock_sleep = mocker.patch("moneysnake.client.time.sleep")
-        # Retry-After as epoch timestamp — set far enough in the future
-        future_ts = "2000000000"
-        mocker.patch("moneysnake.client.time.time", return_value=1999999995.0)
         responses = [
-            _make_response(429, headers={"Retry-After": future_ts}),
+            _make_response(429, headers={"Retry-After": "5"}),
             _make_response(200, json_data={"ok": True}),
         ]
         mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
         make_request("test", method="get")
         assert mock_sleep.call_args[0][0] == 5
+
+    def test_retry_after_invalid_falls_back_to_exponential(self, mocker: MockType):
+        set_max_retries(1)
+        mock_sleep = mocker.patch("moneysnake.client.time.sleep")
+        responses = [
+            _make_response(429, headers={"Retry-After": "Wed, 21 Oct 2025 07:28:00 GMT"}),
+            _make_response(200, json_data={"ok": True}),
+        ]
+        mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        make_request("test", method="get")
+        assert mock_sleep.call_args[0][0] == 1  # 2^0 = 1
 
 
 class TestZeroRetries:
