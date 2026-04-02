@@ -35,7 +35,9 @@ def test_api_error_attributes():
 
 
 def test_404_raises_not_found(mocker: MockType):
-    response = httpx.Response(404, text="Not found", request=httpx.Request("GET", "http://test"))
+    response = httpx.Response(
+        404, text="Not found", request=httpx.Request("GET", "http://test")
+    )
     mocker.patch("moneysnake.client.httpx.request", return_value=response)
 
     with pytest.raises(MoneybirdNotFoundError) as exc_info:
@@ -45,7 +47,9 @@ def test_404_raises_not_found(mocker: MockType):
 
 
 def test_422_raises_validation_error(mocker: MockType):
-    response = httpx.Response(422, text="Unprocessable", request=httpx.Request("POST", "http://test"))
+    response = httpx.Response(
+        422, text="Unprocessable", request=httpx.Request("POST", "http://test")
+    )
     mocker.patch("moneysnake.client.httpx.request", return_value=response)
 
     with pytest.raises(MoneybirdValidationError) as exc_info:
@@ -55,7 +59,9 @@ def test_422_raises_validation_error(mocker: MockType):
 
 
 def test_429_raises_rate_limit_error(mocker: MockType):
-    response = httpx.Response(429, text="Too many requests", request=httpx.Request("GET", "http://test"))
+    response = httpx.Response(
+        429, text="Too many requests", request=httpx.Request("GET", "http://test")
+    )
     mocker.patch("moneysnake.client.httpx.request", return_value=response)
 
     with pytest.raises(MoneybirdRateLimitError) as exc_info:
@@ -65,7 +71,9 @@ def test_429_raises_rate_limit_error(mocker: MockType):
 
 
 def test_500_raises_generic_api_error(mocker: MockType):
-    response = httpx.Response(500, text="Internal error", request=httpx.Request("GET", "http://test"))
+    response = httpx.Response(
+        500, text="Internal error", request=httpx.Request("GET", "http://test")
+    )
     mocker.patch("moneysnake.client.httpx.request", return_value=response)
 
     with pytest.raises(MoneybirdAPIError) as exc_info:

@@ -1,9 +1,9 @@
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator
 
 from .client import http_delete, http_patch, http_post, paginate
-from .model import CrudModel, ensure_list_of
+from .model import CrudModel, Synchronizable, ensure_list_of
 from .payment import Payment
 
 
@@ -22,13 +22,13 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
     project_id: str | None = None
 
     def update(self, data: dict[str, Any]) -> None:
-        for key, value in data.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        validated = self.model_validate({**self.model_dump(), **data})
+        for key in self.__class__.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
 
 
 
-class ExternalSalesInvoice(CrudModel):
+class ExternalSalesInvoice(Synchronizable, CrudModel):
     """
     Represents an external sales invoice in Moneybird.
     """
@@ -115,20 +115,22 @@ class ExternalSalesInvoice(CrudModel):
         if self.details:
             self.details = [detail for detail in self.details if detail.id != detail_id]
 
+    @classmethod
     def list_all_by_contact_id(
-        self,
+        cls,
         contact_id: int,
         state: str | None = "all",
         period: str | None = "this_year",
-    ) -> list["ExternalSalesInvoice"]:
+    ) -> list[Self]:
         """
         List all external sales invoices for a contact.
         """
+        endpoint = cls._sync_endpoint()
         data = paginate(
-            f"{self.endpoint}s",
+            f"{endpoint}s",
             params={"filter": f"contact_id:{contact_id},state:{state},period:{period}"},
         )
-        return [ExternalSalesInvoice(**item) for item in data]
+        return [cls(**item) for item in data]
 
     def create_payment(self, payment: Payment) -> None:
         """

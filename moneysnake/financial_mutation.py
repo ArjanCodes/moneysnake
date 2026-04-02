@@ -6,7 +6,7 @@ from typing import Any, Self
 from pydantic import Field
 
 from .client import http_delete, http_patch, paginate
-from .model import Loadable, MoneybirdModel
+from .model import Loadable, MoneybirdModel, Synchronizable
 
 
 class LinkBookingType(Enum):
@@ -37,7 +37,7 @@ class UnlinkBookingType(Enum):
     Payment = auto()
 
 
-class FinancialMutation(Loadable, MoneybirdModel):
+class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
     """
     Represents a financial mutation in Moneybird.
     """
