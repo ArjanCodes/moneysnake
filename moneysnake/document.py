@@ -79,18 +79,13 @@ class Document(Synchronizable):
             return []
         return ensure_list_of(DocumentDetailsAttribute, value)
 
-    # --- Path helpers ---
-
     @classmethod
     def _base_path(cls) -> str:
         return f"documents/{cls._resource}s"
 
     @classmethod
     def _sync_endpoint(cls) -> str:
-        # Synchronizable appends "s/synchronization", so return the singular path.
         return f"documents/{cls._resource}"
-
-    # --- CRUD ---
 
     def load(self, id: int) -> None:
         data = http_get(f"{self._base_path()}/{id}")
@@ -120,8 +115,6 @@ class Document(Synchronizable):
         http_delete(f"{self._base_path()}/{self.id}")
         self.id = None
 
-    # --- Detail management ---
-
     def add_detail(self, detail: DocumentDetailsAttribute) -> None:
         self.details.append(detail)
 
@@ -140,8 +133,6 @@ class Document(Synchronizable):
 
     def delete_detail(self, detail_id: int) -> None:
         self.details = [d for d in self.details if d.id != detail_id]
-
-    # --- Payment management ---
 
     def create_payment(self, payment: Payment) -> None:
         data = http_post(
@@ -163,8 +154,6 @@ class Document(Synchronizable):
             data={"payment": payment.to_dict()},
         )
         self.update(data)
-
-    # --- Lookup helpers ---
 
     @classmethod
     def list_all(

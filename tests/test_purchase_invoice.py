@@ -11,9 +11,6 @@ from moneysnake.purchase_invoice import (
 )
 
 
-# --- CRUD tests ---
-
-
 def test_save_new_purchase_invoice(mocker: MockType, document_data: dict[str, Any]):
     del document_data["id"]
     mock_post = mocker.patch("moneysnake.document.http_post")
@@ -69,7 +66,6 @@ def test_delete_without_id_raises(document_data: dict[str, Any]):
         invoice.delete()
 
 
-# --- Detail management ---
 
 
 def test_add_detail(document_data: dict[str, Any]):
@@ -105,7 +101,6 @@ def test_delete_detail(document_data: dict[str, Any]):
     assert len(invoice.details) == 0
 
 
-# --- Payment management ---
 
 
 def test_create_payment(
@@ -153,7 +148,6 @@ def test_register_payment(
     )
 
 
-# --- Lookup helpers ---
 
 
 def test_list_all(mocker: MockType, document_data: dict[str, Any]):
@@ -175,7 +169,6 @@ def test_list_all_no_filters(mocker: MockType, document_data: dict[str, Any]):
     mock_paginate.assert_called_once_with("documents/purchase_invoices", params=None)
 
 
-# --- Field validators ---
 
 
 def test_payments_converted_from_dicts(
@@ -194,7 +187,6 @@ def test_details_converted_from_dicts(document_data: dict[str, Any]):
     assert isinstance(invoice.details[0], DocumentDetailsAttribute)
 
 
-# --- Sync ---
 
 
 def test_sync_endpoint():
