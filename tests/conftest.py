@@ -89,6 +89,58 @@ def fixture_contact_data() -> dict[str, Any]:
     }
 
 
+@pytest.fixture(name="document_data")
+def fixture_document_data() -> dict[str, Any]:
+    """Full purchase invoice / receipt response matching Moneybird OpenAPI document schema."""
+    return {
+        "id": "480487019028416410",
+        "administration_id": 123,
+        "contact_id": "480487019000104856",
+        "contact": {
+            "id": "480487019000104856",
+            "company_name": "Foobar Holding B.V.",
+        },
+        "reference": "2026-01234",
+        "date": "2026-04-27",
+        "due_date": "2026-05-11",
+        "entry_number": 1,
+        "state": "open",
+        "currency": "EUR",
+        "exchange_rate": "1.0",
+        "revenue_invoice": False,
+        "prices_are_incl_tax": False,
+        "origin": None,
+        "paid_at": None,
+        "tax_number": None,
+        "total_price_excl_tax": "99.0",
+        "total_price_excl_tax_base": "99.0",
+        "total_price_incl_tax": "119.79",
+        "total_price_incl_tax_base": "119.79",
+        "created_at": "2026-04-27T10:00:00.000Z",
+        "updated_at": "2026-04-27T10:00:00.000Z",
+        "version": 1772448151,
+        "details": [
+            {
+                "id": "480487019122788274",
+                "administration_id": 123,
+                "tax_rate_id": "480486875411252364",
+                "ledger_account_id": "480486875195245688",
+                "project_id": None,
+                "product_id": None,
+                "amount": "1",
+                "amount_decimal": "1.0",
+                "description": "Office supplies",
+                "price": "99.0",
+                "period": None,
+            }
+        ],
+        "payments": [],
+        "notes": [],
+        "attachments": [],
+        "events": [],
+    }
+
+
 @pytest.fixture(name="payment_data")
 def fixture_payment_data() -> dict[str, Any]:
     """Full payment response matching Moneybird OpenAPI payment_response schema."""

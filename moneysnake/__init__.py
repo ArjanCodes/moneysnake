@@ -25,7 +25,15 @@ from .model import Loadable as Loadable
 from .model import MoneybirdModel as MoneybirdModel
 from .model import Saveable as Saveable
 from .model import Synchronizable as Synchronizable
+from .document import Document as Document
+from .document import DocumentDetailsAttribute as DocumentDetailsAttribute
 from .payment import Payment as Payment
+from .purchase_invoice import PurchaseInvoice as PurchaseInvoice
+from .purchase_invoice import (
+    PurchaseInvoiceDetailsAttribute as PurchaseInvoiceDetailsAttribute,
+)
+from .receipt import Receipt as Receipt
+from .receipt import ReceiptDetailsAttribute as ReceiptDetailsAttribute
 from .sales_invoice import SalesInvoice as SalesInvoice
 from .sales_invoice import (
     SalesInvoiceDetailsAttribute as SalesInvoiceDetailsAttribute,
@@ -45,6 +53,8 @@ __all__ = [
     "ContactPerson",
     "CrudModel",
     "Deletable",
+    "Document",
+    "DocumentDetailsAttribute",
     "ExternalSalesInvoice",
     "ExternalSalesInvoiceDetailsAttribute",
     "FinancialMutation",
@@ -57,6 +67,10 @@ __all__ = [
     "MoneybirdRateLimitError",
     "MoneybirdValidationError",
     "Payment",
+    "PurchaseInvoice",
+    "PurchaseInvoiceDetailsAttribute",
+    "Receipt",
+    "ReceiptDetailsAttribute",
     "SalesInvoice",
     "SalesInvoiceDetailsAttribute",
     "Saveable",
