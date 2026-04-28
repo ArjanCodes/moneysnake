@@ -1,6 +1,6 @@
 from typing import Any, ClassVar, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_get, http_patch, http_post, paginate
 from .model import Synchronizable, ensure_list_of
@@ -62,6 +62,8 @@ class Document(Synchronizable):
     details: list[DocumentDetailsAttribute] = Field(default_factory=list)
     payments: list[Payment] = Field(default_factory=list)
 
+    _destroyed_detail_ids: list[int] = PrivateAttr(default_factory=list)
+
     @field_validator("payments")
     def ensure_payments(
         cls, value: list[dict[str, Any]] | list[Payment] | None
@@ -99,7 +101,10 @@ class Document(Synchronizable):
 
     def save(self) -> None:
         body = self.to_dict()
-        body["details_attributes"] = body.pop("details", [])
+        details = body.pop("details", [])
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        body["details_attributes"] = details
 
         if self.id is None:
             data = http_post(self._base_path(), data={self._resource: body})
@@ -107,6 +112,7 @@ class Document(Synchronizable):
             data = http_patch(
                 f"{self._base_path()}/{self.id}", data={self._resource: body}
             )
+        self._destroyed_detail_ids.clear()
         self.update(data)
 
     def delete(self) -> None:
@@ -132,6 +138,9 @@ class Document(Synchronizable):
         return detail
 
     def delete_detail(self, detail_id: int) -> None:
+        detail = self.get_detail(detail_id)
+        if detail.id is not None:
+            self._destroyed_detail_ids.append(detail.id)
         self.details = [d for d in self.details if d.id != detail_id]
 
     def create_payment(self, payment: Payment) -> None:
