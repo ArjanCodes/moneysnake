@@ -285,6 +285,42 @@ def test_delete_detail(ext_invoice_data: dict[str, Any]):
     assert len(invoice.details) == 0
 
 
+def test_delete_detail_not_found(ext_invoice_data: dict[str, Any]):
+    invoice = ExternalSalesInvoice(**ext_invoice_data)
+    with pytest.raises(ValueError, match="not found"):
+        invoice.delete_detail(999)
+
+
+def test_delete_detail_sends_destroy_on_save(
+    mocker: MockType, ext_invoice_data: dict[str, Any]
+):
+    mock_patch = mocker.patch("moneysnake.external_sales_invoice.http_patch")
+    mock_patch.return_value = {**ext_invoice_data, "details": []}
+    invoice = ExternalSalesInvoice(**ext_invoice_data)
+    invoice.delete_detail(433546254876673836)
+    invoice.save()
+
+    sent = mock_patch.call_args[1]["data"]["external_sales_invoice"][
+        "details_attributes"
+    ]
+    assert {"id": 433546254876673836, "_destroy": True} in sent
+    assert invoice._destroyed_detail_ids == []
+
+
+def test_delete_detail_destroy_kept_after_failed_save(
+    mocker: MockType, ext_invoice_data: dict[str, Any]
+):
+    mocker.patch(
+        "moneysnake.external_sales_invoice.http_patch",
+        side_effect=RuntimeError("boom"),
+    )
+    invoice = ExternalSalesInvoice(**ext_invoice_data)
+    invoice.delete_detail(433546254876673836)
+    with pytest.raises(RuntimeError):
+        invoice.save()
+    assert invoice._destroyed_detail_ids == [433546254876673836]
+
+
 def test_find_by_id_converts_payments_to_objects(
     mocker: MockType,
     ext_invoice_data: dict[str, Any],

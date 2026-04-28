@@ -222,6 +222,39 @@ def test_delete_detail(invoice_data: dict[str, Any]):
     assert len(invoice.details) == 0
 
 
+def test_delete_detail_not_found(invoice_data: dict[str, Any]):
+    invoice = SalesInvoice(**invoice_data)
+    with pytest.raises(ValueError, match="not found"):
+        invoice.delete_detail(999)
+
+
+def test_delete_detail_sends_destroy_on_save(
+    mocker: MockType, invoice_data: dict[str, Any]
+):
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "details": []}
+    invoice = SalesInvoice(**invoice_data)
+    invoice.delete_detail(550000000000000100)
+    invoice.save()
+
+    sent = mock_patch.call_args[1]["data"]["sales_invoice"]["details_attributes"]
+    assert {"id": 550000000000000100, "_destroy": True} in sent
+    assert invoice._destroyed_detail_ids == []
+
+
+def test_delete_detail_destroy_kept_after_failed_save(
+    mocker: MockType, invoice_data: dict[str, Any]
+):
+    mocker.patch(
+        "moneysnake.sales_invoice.http_patch", side_effect=RuntimeError("boom")
+    )
+    invoice = SalesInvoice(**invoice_data)
+    invoice.delete_detail(550000000000000100)
+    with pytest.raises(RuntimeError):
+        invoice.save()
+    assert invoice._destroyed_detail_ids == [550000000000000100]
+
+
 # --- Payment management ---
 
 
