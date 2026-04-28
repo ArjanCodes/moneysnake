@@ -1,6 +1,6 @@
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_patch, http_post, paginate
 from .model import CrudModel, Synchronizable, ensure_list_of
@@ -46,6 +46,8 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
     )
     payments: list[Payment] | None = Field(default_factory=list)
 
+    _destroyed_detail_ids: list[int] = PrivateAttr(default_factory=list)
+
     @field_validator("payments")
     def ensure_payments(
         cls, value: list[dict[str, Any]] | list[Payment] | None
@@ -61,7 +63,10 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         invoice_data = self.to_dict()
         # For the POST and PATCH requests we need to use the details_attributes key
         # instead of details key to match the Moneybird API.
-        invoice_data["details_attributes"] = invoice_data.pop("details", [])
+        details = invoice_data.pop("details", [])
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        invoice_data["details_attributes"] = details
 
         if self.id is None:
             data = http_post(
@@ -73,6 +78,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: invoice_data},
             )
+        self._destroyed_detail_ids.clear()
         self.update(data)
 
     def add_detail(self, detail: ExternalSalesInvoiceDetailsAttribute) -> None:
@@ -111,7 +117,9 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         """
         Delete a detail from the external sales invoice.
         """
-
+        detail = self.get_detail(detail_id)
+        if detail.id is not None:
+            self._destroyed_detail_ids.append(detail.id)
         if self.details:
             self.details = [detail for detail in self.details if detail.id != detail_id]
 

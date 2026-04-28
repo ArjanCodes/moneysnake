@@ -1,6 +1,6 @@
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_get, http_get_raw, http_patch, http_post, paginate
 from .custom_field_model import CustomFieldModel
@@ -82,6 +82,8 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
     payments: list[Payment] = Field(default_factory=list)
     tax_totals: list[dict[str, Any]] = Field(default_factory=list)
 
+    _destroyed_detail_ids: list[int] = PrivateAttr(default_factory=list)
+
     @field_validator("payments")
     def ensure_payments(
         cls, value: list[dict[str, Any]] | list[Payment] | None
@@ -102,7 +104,10 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
     def save(self) -> None:
         """Save the sales invoice."""
         invoice_data = self.to_dict()
-        invoice_data["details_attributes"] = invoice_data.pop("details", [])
+        details = invoice_data.pop("details", [])
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        invoice_data["details_attributes"] = details
         if "custom_fields" in invoice_data:
             invoice_data["custom_fields_attributes"] = invoice_data.pop("custom_fields")
 
@@ -116,6 +121,7 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
                 f"{self.endpoint}s/{self.id}",
                 data={self.endpoint: invoice_data},
             )
+        self._destroyed_detail_ids.clear()
         self.update(data)
 
     # --- Detail management ---
@@ -137,6 +143,9 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
         return detail
 
     def delete_detail(self, detail_id: int) -> None:
+        detail = self.get_detail(detail_id)
+        if detail.id is not None:
+            self._destroyed_detail_ids.append(detail.id)
         self.details = [d for d in self.details if d.id != detail_id]
 
     # --- Payment management ---
