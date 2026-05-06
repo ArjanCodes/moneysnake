@@ -287,21 +287,21 @@ def test_delete_payment(
 
 
 def test_send_invoice(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
-    mock_post.return_value = {**invoice_data, "state": "open", "sent_at": "2026-03-31"}
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "state": "open", "sent_at": "2026-03-31"}
     invoice = SalesInvoice(**invoice_data)
     invoice.send_invoice(delivery_method="Email")
     assert invoice.state == "open"
-    call_data = mock_post.call_args[1]["data"]
+    call_data = mock_patch.call_args[1]["data"]
     assert call_data["sales_invoice_sending"]["delivery_method"] == "Email"
 
 
 def test_send_invoice_no_options(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
-    mock_post.return_value = {**invoice_data, "state": "open"}
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "state": "open"}
     invoice = SalesInvoice(**invoice_data)
     invoice.send_invoice()
-    assert mock_post.call_args[1]["data"] is None
+    assert mock_patch.call_args[1]["data"] is None
 
 
 def test_pause(mocker: MockType, invoice_data: dict[str, Any]):
@@ -322,25 +322,25 @@ def test_resume(mocker: MockType, invoice_data: dict[str, Any]):
 
 
 def test_mark_as_dubious(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
-    mock_post.return_value = {**invoice_data, "marked_dubious_on": "2026-03-31"}
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "marked_dubious_on": "2026-03-31"}
     invoice = SalesInvoice(**invoice_data)
     invoice.mark_as_dubious()
     assert invoice.marked_dubious_on == "2026-03-31"
 
 
 def test_mark_as_uncollectible(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
-    mock_post.return_value = {**invoice_data, "marked_uncollectible_on": "2026-03-31"}
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "marked_uncollectible_on": "2026-03-31"}
     invoice = SalesInvoice(**invoice_data)
     invoice.mark_as_uncollectible()
     assert invoice.marked_uncollectible_on == "2026-03-31"
 
 
 def test_duplicate_creditinvoice(mocker: MockType, invoice_data: dict[str, Any]):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
     credit_data = {**invoice_data, "id": "550000000000000999", "state": "draft"}
-    mock_post.return_value = credit_data
+    mock_patch.return_value = credit_data
     invoice = SalesInvoice(**invoice_data)
     credit = invoice.duplicate_creditinvoice()
     assert credit.id == 550000000000000999
@@ -350,8 +350,8 @@ def test_duplicate_creditinvoice(mocker: MockType, invoice_data: dict[str, Any])
 def test_register_payment(
     mocker: MockType, invoice_data: dict[str, Any], payment_data: dict[str, Any]
 ):
-    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
-    mock_post.return_value = {**invoice_data, "state": "paid", "paid_at": "2026-03-31"}
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = {**invoice_data, "state": "paid", "paid_at": "2026-03-31"}
     invoice = SalesInvoice(**invoice_data)
     invoice.register_payment(Payment(**payment_data))
     assert invoice.state == "paid"

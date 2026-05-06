@@ -158,7 +158,7 @@ class Document(Synchronizable):
 
     def register_payment(self, payment: Payment) -> None:
         """Register a payment via the register_payment endpoint."""
-        data = http_post(
+        data = http_patch(
             f"{self._base_path()}/{self.id}/register_payment",
             data={"payment": payment.to_dict()},
         )
