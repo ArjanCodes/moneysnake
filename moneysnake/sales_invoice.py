@@ -191,7 +191,7 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
         if email_message is not None:
             body["email_message"] = email_message
 
-        data = http_post(
+        data = http_patch(
             f"{self.endpoint}s/{self.id}/send_invoice",
             data={"sales_invoice_sending": body} if body else None,
         )
@@ -219,17 +219,17 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
 
     def mark_as_dubious(self) -> None:
         """Mark the invoice as dubious."""
-        data = http_post(f"{self.endpoint}s/{self.id}/mark_as_dubious")
+        data = http_patch(f"{self.endpoint}s/{self.id}/mark_as_dubious")
         self.update(data)
 
     def mark_as_uncollectible(self) -> None:
         """Mark the invoice as uncollectible."""
-        data = http_post(f"{self.endpoint}s/{self.id}/mark_as_uncollectible")
+        data = http_patch(f"{self.endpoint}s/{self.id}/mark_as_uncollectible")
         self.update(data)
 
     def register_payment(self, payment: Payment) -> None:
         """Register a payment via the register_payment endpoint."""
-        data = http_post(
+        data = http_patch(
             f"{self.endpoint}s/{self.id}/register_payment",
             data={"payment": payment.to_dict()},
         )
@@ -237,7 +237,7 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
 
     def duplicate_creditinvoice(self) -> "SalesInvoice":
         """Create a credit invoice for this invoice."""
-        data = http_post(f"{self.endpoint}s/{self.id}/duplicate_creditinvoice")
+        data = http_patch(f"{self.endpoint}s/{self.id}/duplicate_creditinvoice")
         return SalesInvoice(**data)
 
     # --- Lookup helpers ---

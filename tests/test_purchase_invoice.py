@@ -171,13 +171,13 @@ def test_delete_payment(
 def test_register_payment(
     mocker: MockType, document_data: dict[str, Any], payment_data: dict[str, Any]
 ):
-    mock_post = mocker.patch("moneysnake.document.http_post")
-    mock_post.return_value = {**document_data, "state": "paid", "paid_at": "2026-04-27"}
+    mock_patch = mocker.patch("moneysnake.document.http_patch")
+    mock_patch.return_value = {**document_data, "state": "paid", "paid_at": "2026-04-27"}
     invoice = PurchaseInvoice(**document_data)
     invoice.register_payment(Payment(**payment_data))
     assert invoice.state == "paid"
     assert (
-        mock_post.call_args[0][0]
+        mock_patch.call_args[0][0]
         == "documents/purchase_invoices/480487019028416410/register_payment"
     )
 
