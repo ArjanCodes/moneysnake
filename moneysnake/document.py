@@ -2,7 +2,14 @@ from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
-from .client import http_delete, http_get, http_patch, http_post, paginate
+from .client import (
+    http_delete,
+    http_get,
+    http_patch,
+    http_post,
+    http_post_file,
+    paginate,
+)
 from .model import Synchronizable, ensure_list_of
 from .payment import Payment
 
@@ -143,14 +150,34 @@ class Document(Synchronizable):
             self._destroyed_detail_ids.append(detail.id)
         self.details = [d for d in self.details if d.id != detail_id]
 
-    def create_payment(self, payment: Payment) -> None:
+    def create_payment(self, payment: Payment) -> Payment:
         data = http_post(
             path=f"{self._base_path()}/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
-        payment_data = data.get("payment")
-        if payment_data:
-            self.payments.append(Payment(**payment_data))
+        # Moneybird returns the created payment's fields at the top level; some
+        # responses wrap them under a "payment" key. Accept either, and fall
+        # back to the payment we sent if the response carries no body.
+        payload = data.get("payment", data) if isinstance(data, dict) else None
+        created = Payment(**payload) if payload else payment
+        self.payments.append(created)
+        return created
+
+    def add_attachment(
+        self,
+        content: bytes,
+        *,
+        filename: str,
+        content_type: str = "application/pdf",
+    ) -> None:
+        """Upload a file attachment to this document (multipart/form-data)."""
+        http_post_file(
+            f"{self._base_path()}/{self.id}/attachments",
+            field="file",
+            filename=filename,
+            content=content,
+            content_type=content_type,
+        )
 
     def delete_payment(self, payment_id: int) -> None:
         http_delete(path=f"{self._base_path()}/{self.id}/payments/{payment_id}")

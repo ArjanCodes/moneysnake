@@ -143,12 +143,53 @@ def test_create_payment(
     mock_post = mocker.patch("moneysnake.document.http_post")
     mock_post.return_value = {"payment": payment_data}
     invoice = PurchaseInvoice(**document_data)
-    invoice.create_payment(Payment(**payment_data))
+    created = invoice.create_payment(Payment(**payment_data))
     assert len(invoice.payments) == 1
     assert invoice.payments[0].id == 433546310070568441
+    assert created is invoice.payments[0]
     assert (
         mock_post.call_args[1]["path"]
         == "documents/purchase_invoices/480487019028416410/payments"
+    )
+
+
+def test_create_payment_unwrapped_response(
+    mocker: MockType, document_data: dict[str, Any], payment_data: dict[str, Any]
+):
+    """Moneybird returns the payment fields at the top level (no wrapper)."""
+    mock_post = mocker.patch("moneysnake.document.http_post")
+    mock_post.return_value = payment_data
+    invoice = PurchaseInvoice(**document_data)
+    created = invoice.create_payment(Payment(**payment_data))
+    assert len(invoice.payments) == 1
+    assert invoice.payments[0].id == 433546310070568441
+    assert created.id == 433546310070568441
+
+
+def test_create_payment_empty_response_falls_back_to_sent(
+    mocker: MockType, document_data: dict[str, Any], payment_data: dict[str, Any]
+):
+    """An empty (204-like) response still records the payment we sent."""
+    mock_post = mocker.patch("moneysnake.document.http_post")
+    mock_post.return_value = {}
+    invoice = PurchaseInvoice(**document_data)
+    sent = Payment(**payment_data)
+    created = invoice.create_payment(sent)
+    assert len(invoice.payments) == 1
+    assert created is sent
+
+
+def test_add_attachment(mocker: MockType, document_data: dict[str, Any]):
+    mock_upload = mocker.patch("moneysnake.document.http_post_file")
+    mock_upload.return_value = 200
+    invoice = PurchaseInvoice(**document_data)
+    invoice.add_attachment(b"%PDF-1.7 fake", filename="creator-invoice.pdf")
+    mock_upload.assert_called_once_with(
+        "documents/purchase_invoices/480487019028416410/attachments",
+        field="file",
+        filename="creator-invoice.pdf",
+        content=b"%PDF-1.7 fake",
+        content_type="application/pdf",
     )
 
 

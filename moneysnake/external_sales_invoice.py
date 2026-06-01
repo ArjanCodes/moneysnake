@@ -140,7 +140,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         )
         return [cls(**item) for item in data]
 
-    def create_payment(self, payment: Payment) -> None:
+    def create_payment(self, payment: Payment) -> Payment:
         """
         Create a payment for the external sales invoice.
         """
@@ -148,14 +148,17 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
             path=f"{self.endpoint}s/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
-        # Get the payment data from the response and append it to the payments list
-        payment_data = data.get("payment")
+        # Moneybird returns the created payment's fields at the top level; some
+        # responses wrap them under a "payment" key. Accept either, and fall
+        # back to the payment we sent if the response carries no body.
+        payload = data.get("payment", data) if isinstance(data, dict) else None
+        created = Payment(**payload) if payload else payment
 
         if self.payments is None:
             self.payments = []
 
-        if payment_data:
-            self.payments.append(Payment(**payment_data))
+        self.payments.append(created)
+        return created
 
     def delete_payment(self, payment_id: int) -> None:
         """

@@ -1,15 +1,12 @@
 [project]
 name = "moneysnake"
-version = "0.5.1"
+version = "0.5.3"
 description = "Moneybird SDK for Python"
 authors = [{ name = "ArjanCodes" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "httpx>=0.28.1",
-    "pydantic>=2.12.5",
-]
+dependencies = ["httpx>=0.28.1", "pydantic>=2.12.5"]
 
 [dependency-groups]
 dev = [

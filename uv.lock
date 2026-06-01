@@ -170,7 +170,7 @@ wheels = [
 
 [[package]]
 name = "moneysnake"
-version = "0.5.1"
+version = "0.5.3"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

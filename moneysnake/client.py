@@ -173,6 +173,47 @@ def http_delete(path: str, data: dict[str, Any] | None = None) -> Any:
     return make_request(path, method="delete", data=data)
 
 
+def http_post_file(
+    path: str,
+    *,
+    field: str,
+    filename: str,
+    content: bytes,
+    content_type: str = "application/octet-stream",
+) -> Any:
+    """POST a multipart/form-data file upload (e.g. document attachments).
+
+    httpx sets the multipart Content-Type (with boundary) itself, so we only
+    pass the Authorization header. Uploads aren't retried.
+    """
+    headers = {"Authorization": f"Bearer {token_}"}
+    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
+    logger.debug("POST %s (multipart upload)", fullpath)
+    response = httpx.post(
+        fullpath,
+        headers=headers,
+        files={field: (filename, content, content_type)},
+        timeout=timeout_,
+    )
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        body = response.text
+        logger.warning("POST %s returned %d: %s", fullpath, response.status_code, body)
+        error_cls: type[MoneybirdAPIError] = {
+            404: MoneybirdNotFoundError,
+            422: MoneybirdValidationError,
+            429: MoneybirdRateLimitError,
+        }.get(response.status_code, MoneybirdAPIError)
+        raise error_cls(
+            status_code=response.status_code,
+            response_body=body,
+            method="post",
+            path=path,
+        ) from exc
+    return response.json() if response.content else {}
+
+
 def paginate(path: str, params: dict[str, Any] | None = None, per_page: int = 100) -> list[Any]:
     """Fetch all pages from a paginated list endpoint."""
     all_results: list[Any] = []
