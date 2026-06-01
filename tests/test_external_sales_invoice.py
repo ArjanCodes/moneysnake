@@ -181,10 +181,27 @@ def test_create_payment(
     invoice = ExternalSalesInvoice(**ext_invoice_data)
     invoice.id = 433546254874576683
     external_sales_invoice_payment = ExternalSalesInvoicePayment(**ext_payment_data)
-    invoice.create_payment(external_sales_invoice_payment)
+    created = invoice.create_payment(external_sales_invoice_payment)
 
     assert invoice.payments is not None
     assert len(invoice.payments) == 1
+    assert created is invoice.payments[-1]
+
+
+def test_create_payment_unwrapped_response(
+    mocker: MockType,
+    ext_invoice_data: dict[str, Any],
+    ext_payment_data: dict[str, Any],
+):
+    """Moneybird returns the payment fields at the top level (no wrapper)."""
+    mock_make_request = mocker.patch("moneysnake.external_sales_invoice.http_post")
+    mock_make_request.return_value = ext_payment_data
+    invoice = ExternalSalesInvoice(**ext_invoice_data)
+    invoice.id = 433546254874576683
+    created = invoice.create_payment(ExternalSalesInvoicePayment(**ext_payment_data))
+
+    assert len(invoice.payments) == 1
+    assert created.id == int(ext_payment_data["id"])
 
 
 def test_delete_payment(
