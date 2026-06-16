@@ -187,6 +187,33 @@ class TestRetryBackoff:
         make_request("test", method="get")
         assert mock_sleep.call_args[0][0] == 5
 
+    def test_retry_after_epoch_timestamp_converted_to_delay(self, mocker: MockType):
+        """Moneybird sends Retry-After as an absolute Unix epoch timestamp."""
+        set_max_retries(1)
+        mocker.patch("moneysnake.client.time.time", return_value=1_700_000_000)
+        mock_sleep = mocker.patch("moneysnake.client.time.sleep")
+        responses = [
+            # 5 seconds in the future, expressed as an absolute epoch time.
+            _make_response(429, headers={"Retry-After": "1700000005"}),
+            _make_response(200, json_data={"ok": True}),
+        ]
+        mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        make_request("test", method="get")
+        assert mock_sleep.call_args[0][0] == 5
+
+    def test_retry_after_past_epoch_clamped_to_one(self, mocker: MockType):
+        """An already-elapsed epoch timestamp clamps to a minimum 1s delay."""
+        set_max_retries(1)
+        mocker.patch("moneysnake.client.time.time", return_value=1_700_000_010)
+        mock_sleep = mocker.patch("moneysnake.client.time.sleep")
+        responses = [
+            _make_response(429, headers={"Retry-After": "1700000000"}),
+            _make_response(200, json_data={"ok": True}),
+        ]
+        mocker.patch("moneysnake.client.httpx.request", side_effect=responses)
+        make_request("test", method="get")
+        assert mock_sleep.call_args[0][0] == 1
+
     def test_retry_after_invalid_falls_back_to_exponential(self, mocker: MockType):
         set_max_retries(1)
         mock_sleep = mocker.patch("moneysnake.client.time.sleep")
