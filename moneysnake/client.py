@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from typing import Any
 
@@ -55,6 +56,34 @@ def _is_retryable(status_code: int, method: str) -> bool:
     return False
 
 
+# Moneybird sends Retry-After as an absolute Unix epoch timestamp (seconds since
+# the epoch), not the RFC 7231 "delay in seconds". We still accept a plain delay
+# for robustness: values below this threshold are read as a relative number of
+# seconds, values at or above it as an absolute epoch time to wait until.
+_EPOCH_THRESHOLD = 1_000_000_000  # 2001-09-09; far beyond any sane retry delay
+
+
+def _retry_delay(retry_after: str | None, attempt: int) -> int:
+    """Whole seconds to wait before the next retry.
+
+    Falls back to exponential backoff when there is no usable Retry-After
+    header. A Retry-After given as an absolute epoch timestamp is converted to a
+    relative delay (rounded up so we never retry before the reset time); a plain
+    delay-in-seconds is used as-is.
+    """
+    backoff = 2 ** attempt
+    if not retry_after:
+        return backoff
+    try:
+        value = int(retry_after)
+    except ValueError:
+        # e.g. an HTTP-date string; fall back to exponential backoff.
+        return backoff
+    if value >= _EPOCH_THRESHOLD:
+        value = math.ceil(value - time.time())
+    return max(value, 1)
+
+
 def make_request(
     path: str,
     data: dict[str, Any] | None = None,
@@ -84,15 +113,7 @@ def make_request(
         except httpx.HTTPStatusError as exc:
             last_exc = exc
             if _is_retryable(response.status_code, method) and attempt < max_retries_:
-                retry_after = response.headers.get("Retry-After")
-                if retry_after:
-                    try:
-                        delay = int(retry_after)
-                    except ValueError:
-                        delay = 2 ** attempt
-                    delay = max(delay, 1)
-                else:
-                    delay = 2 ** attempt
+                delay = _retry_delay(response.headers.get("Retry-After"), attempt)
                 logger.warning(
                     "%s %s returned %d, retrying in %ds (attempt %d/%d)",
                     method.upper(),
