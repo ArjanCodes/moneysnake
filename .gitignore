@@ -5,3 +5,6 @@
 *.egg-info/
 build/
 dist/
+# Local Claude Code config
+CLAUDE.md
+.claude
