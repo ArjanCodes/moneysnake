@@ -1,7 +1,7 @@
 import logging
 import math
 import time
-from typing import Any, NoReturn
+from typing import Any
 
 import httpx
 from httpx import Response
@@ -91,16 +91,6 @@ _ERROR_CLASSES: dict[int, type[MoneybirdAPIError]] = {
 }
 
 
-def _raise_api_error(response: Response, method: str, path: str) -> NoReturn:
-    error_cls = _ERROR_CLASSES.get(response.status_code, MoneybirdAPIError)
-    raise error_cls(
-        status_code=response.status_code,
-        response_body=response.text,
-        method=method,
-        path=path,
-    )
-
-
 def _send(
     method: str,
     path: str,
@@ -110,12 +100,8 @@ def _send(
     files: dict[str, tuple[str, bytes, str]] | None = None,
     headers: dict[str, str] | None = None,
     follow_redirects: bool = False,
-    retry: bool = False,
 ) -> Response:
-    """Send one request to Moneybird and raise the matching error on failure.
-
-    With retry=True, a retryable error response is returned instead of raised.
-    """
+    """Send one request to Moneybird and raise the matching error on failure."""
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
     logger.debug("%s %s", method.upper(), fullpath)
     response = httpx.request(
@@ -131,8 +117,6 @@ def _send(
     if not response.is_error:
         logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
         return response
-    if retry and _is_retryable(response.status_code, method):
-        return response
     logger.warning(
         "%s %s returned %d: %s",
         method.upper(),
@@ -140,7 +124,14 @@ def _send(
         response.status_code,
         response.text,
     )
-    _raise_api_error(response, method, path)
+    error_cls = _ERROR_CLASSES.get(response.status_code, MoneybirdAPIError)
+    raise error_cls(
+        status_code=response.status_code,
+        response_body=response.text,
+        method=method,
+        path=path,
+        retry_after=response.headers.get("Retry-After"),
+    )
 
 
 def make_request(
@@ -151,29 +142,31 @@ def make_request(
 ) -> Any:
     attempt = 0
     while True:
-        response = _send(
-            method,
-            path,
-            json=data,
-            params=params,
-            headers={"Content-Type": "application/json"},
-            retry=attempt < max_retries_,
-        )
-        if not response.is_error:
+        try:
+            response = _send(
+                method,
+                path,
+                json=data,
+                params=params,
+                headers={"Content-Type": "application/json"},
+            )
+        except MoneybirdAPIError as error:
+            if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
+                raise
+            delay = _retry_delay(error.retry_after, attempt)
+            logger.warning(
+                "%s %s returned %d, retrying in %ds (attempt %d/%d)",
+                method.upper(),
+                path,
+                error.status_code,
+                delay,
+                attempt + 1,
+                max_retries_ + 1,
+            )
+            time.sleep(delay)
+            attempt += 1
+        else:
             return response.json() if response.content else {}
-
-        delay = _retry_delay(response.headers.get("Retry-After"), attempt)
-        logger.warning(
-            "%s %s returned %d, retrying in %ds (attempt %d/%d)",
-            method.upper(),
-            path,
-            response.status_code,
-            delay,
-            attempt + 1,
-            max_retries_ + 1,
-        )
-        time.sleep(delay)
-        attempt += 1
 
 
 def http_get(path: str, params: dict[str, Any] | None = None) -> Any:

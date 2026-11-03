@@ -11,11 +11,14 @@ class MoneybirdAPIError(MoneybirdError):
         response_body: str,
         method: str,
         path: str,
+        *,
+        retry_after: str | None = None,
     ) -> None:
         self.status_code = status_code
         self.response_body = response_body
         self.method = method
         self.path = path
+        self.retry_after = retry_after
         super().__init__(
             f"{method.upper()} {path} returned {status_code}: {response_body}"
         )
