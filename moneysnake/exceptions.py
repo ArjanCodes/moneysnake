@@ -39,21 +39,16 @@ class MoneybirdAPIError(MoneybirdError):
         self.method = method
         self.path = path
         self.retry_after = retry_after
-        self._body = _parse_body(response_body)
+        self.body = _parse_body(response_body)
         super().__init__(
             f"{method.upper()} {path} returned {status_code}: {response_body}"
         )
 
     @property
-    def body(self) -> dict[str, Any]:
-        """The parsed JSON error body, or an empty dict when it is not a JSON object."""
-        return self._body
-
-    @property
     def message(self) -> str:
         """The full message, the error string, or the raw body text."""
         for key in ("full_message", "error"):
-            value = self._body.get(key)
+            value = self.body.get(key)
             if isinstance(value, str):
                 return value
         return self.response_body
@@ -61,7 +56,7 @@ class MoneybirdAPIError(MoneybirdError):
     @property
     def field_errors(self) -> dict[str, list[str]]:
         """Messages per rejected field, empty when the body has no field mapping."""
-        errors = self._body.get("error")
+        errors = self.body.get("error")
         if not isinstance(errors, dict):
             return {}
         return {
@@ -73,7 +68,7 @@ class MoneybirdAPIError(MoneybirdError):
     @property
     def field_error_codes(self) -> dict[str, list[str]]:
         """Error codes per rejected field, taken from the details mapping."""
-        details = self._body.get("details")
+        details = self.body.get("details")
         if not isinstance(details, dict):
             return {}
         return {
@@ -89,7 +84,7 @@ class MoneybirdAPIError(MoneybirdError):
     @property
     def symbolic(self) -> dict[str, Any] | None:
         """The nested mapping of symbolic error codes, when the body has one."""
-        symbolic = self._body.get("symbolic")
+        symbolic = self.body.get("symbolic")
         return symbolic if isinstance(symbolic, dict) else None
 
 

@@ -17,6 +17,7 @@ from .exceptions import (
     MoneybirdPaymentRequiredError,
     MoneybirdRateLimitError,
     MoneybirdServerError,
+    MoneybirdTransientError,
     MoneybirdValidationError,
 )
 
@@ -55,12 +56,10 @@ def set_max_retries(max_retries: int) -> None:
 _IDEMPOTENT_METHODS = frozenset({"get", "put", "delete", "head", "options"})
 
 
-def _is_retryable(status_code: int, method: str) -> bool:
-    if status_code == 429:
+def _can_retry(error: MoneybirdTransientError, method: str) -> bool:
+    if isinstance(error, MoneybirdRateLimitError):
         return True
-    if status_code >= 500 and method.lower() in _IDEMPOTENT_METHODS:
-        return True
-    return False
+    return method.lower() in _IDEMPOTENT_METHODS
 
 
 # Moneybird sends Retry-After as an absolute Unix epoch timestamp (seconds since
@@ -174,29 +173,28 @@ def make_request(
                 params=params,
                 headers={"Content-Type": "application/json"},
             )
-        except MoneybirdConnectionError:
-            if attempt >= max_retries_ or method.lower() not in _IDEMPOTENT_METHODS:
+        except MoneybirdTransientError as error:
+            if attempt >= max_retries_ or not _can_retry(error, method):
                 raise
-            delay = _retry_delay(None, attempt)
-            outcome = "failed"
-        except MoneybirdAPIError as error:
-            if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
-                raise
-            delay = _retry_delay(error.retry_after, attempt)
-            outcome = f"returned {error.status_code}"
+            if isinstance(error, MoneybirdAPIError):
+                delay = _retry_delay(error.retry_after, attempt)
+                outcome = f"returned {error.status_code}"
+            else:
+                delay = _retry_delay(None, attempt)
+                outcome = "failed"
+            logger.warning(
+                "%s %s %s, retrying in %ds (attempt %d/%d)",
+                method.upper(),
+                path,
+                outcome,
+                delay,
+                attempt + 1,
+                max_retries_ + 1,
+            )
+            time.sleep(delay)
+            attempt += 1
         else:
             return response.json() if response.content else {}
-        logger.warning(
-            "%s %s %s, retrying in %ds (attempt %d/%d)",
-            method.upper(),
-            path,
-            outcome,
-            delay,
-            attempt + 1,
-            max_retries_ + 1,
-        )
-        time.sleep(delay)
-        attempt += 1
 
 
 def http_get(path: str, params: dict[str, Any] | None = None) -> Any:
