@@ -1,14 +1,14 @@
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_get, http_get_raw, http_patch, http_post, paginate
 from .custom_field_model import CustomFieldModel
-from .model import Synchronizable, ensure_list_of
+from .model import Synchronizable, Updatable, ensure_list_of
 from .payment import Payment
 
 
-class SalesInvoiceDetailsAttribute(BaseModel):
+class SalesInvoiceDetailsAttribute(Updatable):
     """Details attribute (line item) for a sales invoice."""
 
     id: int | None = None
@@ -22,12 +22,6 @@ class SalesInvoiceDetailsAttribute(BaseModel):
     product_id: int | str | None = None
     row_order: int | None = None
     model_config = ConfigDict(extra="ignore")
-
-    def update(self, data: dict[str, Any]) -> None:
-        validated = self.model_validate({**self.model_dump(), **data})
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
-        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 class SalesInvoice(Synchronizable, CustomFieldModel):
@@ -102,13 +96,18 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
             return []
         return ensure_list_of(SalesInvoiceDetailsAttribute, value)
 
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("details", None)
+        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        data["details_attributes"] = details
+        return data
+
     def save(self) -> None:
         """Save the sales invoice."""
         invoice_data = self._write_data()
-        details = invoice_data.pop("details", [])
-        for detail_id in self._destroyed_detail_ids:
-            details.append({"id": detail_id, "_destroy": True})
-        invoice_data["details_attributes"] = details
 
         if self.id is None:
             data = http_post(
@@ -126,7 +125,7 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
     # --- Detail management ---
 
     def add_detail(self, detail: SalesInvoiceDetailsAttribute) -> None:
-        self.details = [*self.details, detail]
+        self.details.append(detail)
 
     def get_detail(self, detail_id: int) -> SalesInvoiceDetailsAttribute:
         for detail in self.details:
