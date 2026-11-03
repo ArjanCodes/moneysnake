@@ -8,8 +8,15 @@ from httpx import Response
 
 from .exceptions import (
     MoneybirdAPIError,
+    MoneybirdAuthenticationError,
+    MoneybirdBadRequestError,
+    MoneybirdClientError,
+    MoneybirdConnectionError,
+    MoneybirdForbiddenError,
     MoneybirdNotFoundError,
+    MoneybirdPaymentRequiredError,
     MoneybirdRateLimitError,
+    MoneybirdServerError,
     MoneybirdValidationError,
 )
 
@@ -85,14 +92,26 @@ def _retry_delay(retry_after: str | None, attempt: int) -> int:
 
 
 _ERROR_CLASSES: dict[int, type[MoneybirdAPIError]] = {
+    400: MoneybirdBadRequestError,
+    401: MoneybirdAuthenticationError,
+    402: MoneybirdPaymentRequiredError,
+    403: MoneybirdForbiddenError,
     404: MoneybirdNotFoundError,
     422: MoneybirdValidationError,
     429: MoneybirdRateLimitError,
 }
 
 
+def _error_class(status_code: int) -> type[MoneybirdAPIError]:
+    if status_code in _ERROR_CLASSES:
+        return _ERROR_CLASSES[status_code]
+    if status_code >= 500:
+        return MoneybirdServerError
+    return MoneybirdClientError
+
+
 def _raise_api_error(response: Response, method: str, path: str) -> NoReturn:
-    error_cls = _ERROR_CLASSES.get(response.status_code, MoneybirdAPIError)
+    error_cls = _error_class(response.status_code)
     raise error_cls(
         status_code=response.status_code,
         response_body=response.text,
@@ -118,16 +137,21 @@ def _send(
     """
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
     logger.debug("%s %s", method.upper(), fullpath)
-    response = httpx.request(
-        method,
-        fullpath,
-        json=json,
-        params=params,
-        files=files,
-        headers={"Authorization": f"Bearer {token_}", **(headers or {})},
-        timeout=timeout_,
-        follow_redirects=follow_redirects,
-    )
+    try:
+        response = httpx.request(
+            method,
+            fullpath,
+            json=json,
+            params=params,
+            files=files,
+            headers={"Authorization": f"Bearer {token_}", **(headers or {})},
+            timeout=timeout_,
+            follow_redirects=follow_redirects,
+        )
+    except httpx.TransportError as error:
+        reason = str(error) or type(error).__name__
+        logger.warning("%s %s failed: %s", method.upper(), fullpath, reason)
+        raise MoneybirdConnectionError(method, path, reason) from error
     if not response.is_error:
         logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
         return response
@@ -151,23 +175,31 @@ def make_request(
 ) -> Any:
     attempt = 0
     while True:
-        response = _send(
-            method,
-            path,
-            json=data,
-            params=params,
-            headers={"Content-Type": "application/json"},
-            retry=attempt < max_retries_,
-        )
-        if not response.is_error:
-            return response.json() if response.content else {}
+        try:
+            response = _send(
+                method,
+                path,
+                json=data,
+                params=params,
+                headers={"Content-Type": "application/json"},
+                retry=attempt < max_retries_,
+            )
+        except MoneybirdConnectionError:
+            if attempt >= max_retries_ or method.lower() not in _IDEMPOTENT_METHODS:
+                raise
+            delay = _retry_delay(None, attempt)
+            outcome = "failed"
+        else:
+            if not response.is_error:
+                return response.json() if response.content else {}
+            delay = _retry_delay(response.headers.get("Retry-After"), attempt)
+            outcome = f"returned {response.status_code}"
 
-        delay = _retry_delay(response.headers.get("Retry-After"), attempt)
         logger.warning(
-            "%s %s returned %d, retrying in %ds (attempt %d/%d)",
+            "%s %s %s, retrying in %ds (attempt %d/%d)",
             method.upper(),
             path,
-            response.status_code,
+            outcome,
             delay,
             attempt + 1,
             max_retries_ + 1,

@@ -15,6 +15,39 @@ This library is uploaded to PyPi, to install simply run the following commands:
 pip install moneysnake
 ```
 
+## Errors
+
+Every error the library raises is a `MoneybirdError`. Each error is also either transient or permanent. A transient error can succeed when you repeat the request later. A permanent error fails again until you change the request.
+
+- `MoneybirdError`
+  - `MoneybirdTransientError`
+    - `MoneybirdRateLimitError` (429)
+    - `MoneybirdServerError` (5xx)
+    - `MoneybirdConnectionError` (timeout or no connection, no response)
+  - `MoneybirdPermanentError`
+    - `MoneybirdBadRequestError` (400)
+    - `MoneybirdAuthenticationError` (401)
+    - `MoneybirdPaymentRequiredError` (402)
+    - `MoneybirdForbiddenError` (403)
+    - `MoneybirdNotFoundError` (404)
+    - `MoneybirdValidationError` (422)
+    - `MoneybirdClientError` (other 4xx)
+  - `MoneybirdAPIError`, the base of every error that has an HTTP response. All classes above except `MoneybirdConnectionError` are also a `MoneybirdAPIError`.
+
+The library retries rate limits, and it retries server errors and connection errors only for requests that are safe to repeat, such as GET and DELETE. It raises the error when the retries are used up.
+
+A `MoneybirdAPIError` keeps the raw body in `response_body` and parses it for you. `message` gives the error message, `field_errors` gives the messages per field, `field_error_codes` gives the error codes per field, and `symbolic` gives the symbolic error codes when Moneybird sends them.
+
+```python
+from moneysnake import Contact, MoneybirdValidationError
+
+try:
+    Contact(company_name="Acme", tax_number="NL123").save()
+except MoneybirdValidationError as error:
+    for field, messages in error.field_errors.items():
+        print(field, messages)
+```
+
 # Contributing
 If you want to contribute to this project, please use the following steps:
 

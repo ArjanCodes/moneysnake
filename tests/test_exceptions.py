@@ -8,6 +8,7 @@ from moneysnake.exceptions import (
     MoneybirdError,
     MoneybirdNotFoundError,
     MoneybirdRateLimitError,
+    MoneybirdServerError,
     MoneybirdValidationError,
 )
 
@@ -70,7 +71,7 @@ def test_429_raises_rate_limit_error(mocker: MockType):
     assert exc_info.value.status_code == 429
 
 
-def test_500_raises_generic_api_error(mocker: MockType):
+def test_500_raises_server_error(mocker: MockType):
     response = httpx.Response(
         500, text="Internal error", request=httpx.Request("GET", "http://test")
     )
@@ -80,4 +81,4 @@ def test_500_raises_generic_api_error(mocker: MockType):
         make_request("contacts", method="get")
 
     assert exc_info.value.status_code == 500
-    assert type(exc_info.value) is MoneybirdAPIError
+    assert type(exc_info.value) is MoneybirdServerError

@@ -9,9 +9,18 @@ from .client import set_token as set_token
 from .contact import Contact as Contact
 from .contact import ContactPerson as ContactPerson
 from .exceptions import MoneybirdAPIError as MoneybirdAPIError
+from .exceptions import MoneybirdAuthenticationError as MoneybirdAuthenticationError
+from .exceptions import MoneybirdBadRequestError as MoneybirdBadRequestError
+from .exceptions import MoneybirdClientError as MoneybirdClientError
+from .exceptions import MoneybirdConnectionError as MoneybirdConnectionError
 from .exceptions import MoneybirdError as MoneybirdError
+from .exceptions import MoneybirdForbiddenError as MoneybirdForbiddenError
 from .exceptions import MoneybirdNotFoundError as MoneybirdNotFoundError
+from .exceptions import MoneybirdPaymentRequiredError as MoneybirdPaymentRequiredError
+from .exceptions import MoneybirdPermanentError as MoneybirdPermanentError
 from .exceptions import MoneybirdRateLimitError as MoneybirdRateLimitError
+from .exceptions import MoneybirdServerError as MoneybirdServerError
+from .exceptions import MoneybirdTransientError as MoneybirdTransientError
 from .exceptions import MoneybirdValidationError as MoneybirdValidationError
 from .external_sales_invoice import ExternalSalesInvoice as ExternalSalesInvoice
 from .external_sales_invoice import (
@@ -61,10 +70,19 @@ __all__ = [
     "FinancialStatement",
     "Loadable",
     "MoneybirdAPIError",
+    "MoneybirdAuthenticationError",
+    "MoneybirdBadRequestError",
+    "MoneybirdClientError",
+    "MoneybirdConnectionError",
     "MoneybirdError",
+    "MoneybirdForbiddenError",
     "MoneybirdModel",
     "MoneybirdNotFoundError",
+    "MoneybirdPaymentRequiredError",
+    "MoneybirdPermanentError",
     "MoneybirdRateLimitError",
+    "MoneybirdServerError",
+    "MoneybirdTransientError",
     "MoneybirdValidationError",
     "Payment",
     "PurchaseInvoice",
