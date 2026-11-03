@@ -101,7 +101,7 @@ class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
     def search(
         cls,
         query_string: str | None = None,
-        period: str = datetime.now().strftime("%Y%m%d"),
+        period: str | None = None,
         financial_account_id: str | None = None,
     ) -> list[Self]:
         """
@@ -111,6 +111,8 @@ class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
         A specific 'period' is required to avoid the 'Too many mutations' error.
         If no period is provided, it defaults to the current day.
         """
+        if period is None:
+            period = datetime.now().strftime("%Y%m%d")
         formatted_period = (
             f"{period}..{period}" if len(period) == 8 and ".." not in period else period
         )

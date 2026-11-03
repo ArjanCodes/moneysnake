@@ -86,3 +86,19 @@ def test_search_financial_mutations_default_period(mocker: MockType):
     mock_http_get.assert_called_once_with(
         "financial_mutations", params={"filter": expected_filter}
     )
+
+
+def test_search_default_period_uses_current_day_per_call(mocker: MockType):
+    mock_paginate = mocker.patch("moneysnake.financial_mutation.paginate")
+    mock_paginate.return_value = []
+
+    with freeze_time("2024-03-01"):
+        FinancialMutation.search()
+    with freeze_time("2024-03-02"):
+        FinancialMutation.search()
+
+    filters = [c.kwargs["params"]["filter"] for c in mock_paginate.call_args_list]
+    assert filters == [
+        "period:20240301..20240301",
+        "period:20240302..20240302",
+    ]
