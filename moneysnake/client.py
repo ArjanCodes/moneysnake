@@ -8,8 +8,16 @@ from httpx import Response
 
 from .exceptions import (
     MoneybirdAPIError,
+    MoneybirdAuthenticationError,
+    MoneybirdBadRequestError,
+    MoneybirdClientError,
+    MoneybirdConnectionError,
+    MoneybirdForbiddenError,
     MoneybirdNotFoundError,
+    MoneybirdPaymentRequiredError,
     MoneybirdRateLimitError,
+    MoneybirdServerError,
+    MoneybirdTransientError,
     MoneybirdValidationError,
 )
 
@@ -48,12 +56,10 @@ def set_max_retries(max_retries: int) -> None:
 _IDEMPOTENT_METHODS = frozenset({"get", "put", "delete", "head", "options"})
 
 
-def _is_retryable(status_code: int, method: str) -> bool:
-    if status_code == 429:
+def _can_retry(error: MoneybirdTransientError, method: str) -> bool:
+    if isinstance(error, MoneybirdRateLimitError):
         return True
-    if status_code >= 500 and method.lower() in _IDEMPOTENT_METHODS:
-        return True
-    return False
+    return method.lower() in _IDEMPOTENT_METHODS
 
 
 # Moneybird sends Retry-After as an absolute Unix epoch timestamp (seconds since
@@ -85,10 +91,22 @@ def _retry_delay(retry_after: str | None, attempt: int) -> int:
 
 
 _ERROR_CLASSES: dict[int, type[MoneybirdAPIError]] = {
+    400: MoneybirdBadRequestError,
+    401: MoneybirdAuthenticationError,
+    402: MoneybirdPaymentRequiredError,
+    403: MoneybirdForbiddenError,
     404: MoneybirdNotFoundError,
     422: MoneybirdValidationError,
     429: MoneybirdRateLimitError,
 }
+
+
+def _error_class(status_code: int) -> type[MoneybirdAPIError]:
+    if status_code in _ERROR_CLASSES:
+        return _ERROR_CLASSES[status_code]
+    if status_code >= 500:
+        return MoneybirdServerError
+    return MoneybirdClientError
 
 
 def _send(
@@ -103,16 +121,21 @@ def _send(
     """Send one request to Moneybird and raise the matching error on failure."""
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
     logger.debug("%s %s", method.upper(), fullpath)
-    response = httpx.request(
-        method,
-        fullpath,
-        json=json,
-        params=params,
-        files=files,
-        headers={"Authorization": f"Bearer {token_}"},
-        timeout=timeout_,
-        follow_redirects=follow_redirects,
-    )
+    try:
+        response = httpx.request(
+            method,
+            fullpath,
+            json=json,
+            params=params,
+            files=files,
+            headers={"Authorization": f"Bearer {token_}"},
+            timeout=timeout_,
+            follow_redirects=follow_redirects,
+        )
+    except httpx.TransportError as error:
+        reason = str(error) or type(error).__name__
+        logger.warning("%s %s failed: %s", method.upper(), fullpath, reason)
+        raise MoneybirdConnectionError(method, path, reason) from error
     if not response.is_error:
         logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
         return response
@@ -123,7 +146,7 @@ def _send(
         response.status_code,
         response.text,
     )
-    error_cls = _ERROR_CLASSES.get(response.status_code, MoneybirdAPIError)
+    error_cls = _error_class(response.status_code)
     raise error_cls(
         status_code=response.status_code,
         response_body=response.text,
@@ -148,15 +171,13 @@ def make_request(
                 json=data,
                 params=params,
             )
-        except MoneybirdAPIError as error:
-            if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
+        except MoneybirdTransientError as error:
+            if attempt >= max_retries_ or not _can_retry(error, method):
                 raise
             delay = _retry_delay(error.retry_after, attempt)
             logger.warning(
-                "%s %s returned %d, retrying in %ds (attempt %d/%d)",
-                method.upper(),
-                path,
-                error.status_code,
+                "%s, retrying in %ds (attempt %d/%d)",
+                error,
                 delay,
                 attempt + 1,
                 max_retries_ + 1,
