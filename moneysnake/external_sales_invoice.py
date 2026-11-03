@@ -42,6 +42,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
     prices_are_incl_tax: bool | None = None
     source: str | None = None
     source_url: str | None = None
+    version: int | None = None
     details: list[ExternalSalesInvoiceDetailsAttribute] | None = Field(
         default_factory=list
     )

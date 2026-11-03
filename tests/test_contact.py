@@ -53,3 +53,8 @@ def test_save_sends_null_for_field_set_to_none(mocker: MockType):
     patch.assert_called_once_with(
         "contacts/1", data={"contact": {"id": 1, "company_name": None}}
     )
+
+
+def test_load_keeps_version(contact_data: dict[str, Any]):
+    contact = Contact.model_validate(contact_data)
+    assert contact.version == contact_data["version"]

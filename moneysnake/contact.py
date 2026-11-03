@@ -46,6 +46,7 @@ class Contact(Synchronizable, CustomFieldModel):
     direct_debit: bool = False
     contact_people: list[ContactPerson] | None = None
     type: str | None = None
+    version: int | None = None
     from_checkout: bool = False
 
     @staticmethod
