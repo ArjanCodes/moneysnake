@@ -277,5 +277,5 @@ def test_details_converted_from_dicts(document_data: dict[str, Any]):
 
 
 
-def test_sync_endpoint():
-    assert PurchaseInvoice._sync_endpoint() == "documents/purchase_invoice"
+def test_endpoint_name():
+    assert PurchaseInvoice._endpoint_name() == "documents/purchase_invoice"
