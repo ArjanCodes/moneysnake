@@ -116,7 +116,6 @@ def _send(
     json: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
     files: dict[str, tuple[str, bytes, str]] | None = None,
-    headers: dict[str, str] | None = None,
     follow_redirects: bool = False,
 ) -> Response:
     """Send one request to Moneybird and raise the matching error on failure."""
@@ -129,7 +128,7 @@ def _send(
             json=json,
             params=params,
             files=files,
-            headers={"Authorization": f"Bearer {token_}", **(headers or {})},
+            headers={"Authorization": f"Bearer {token_}"},
             timeout=timeout_,
             follow_redirects=follow_redirects,
         )
@@ -171,22 +170,14 @@ def make_request(
                 path,
                 json=data,
                 params=params,
-                headers={"Content-Type": "application/json"},
             )
         except MoneybirdTransientError as error:
             if attempt >= max_retries_ or not _can_retry(error, method):
                 raise
-            if isinstance(error, MoneybirdAPIError):
-                delay = _retry_delay(error.retry_after, attempt)
-                outcome = f"returned {error.status_code}"
-            else:
-                delay = _retry_delay(None, attempt)
-                outcome = "failed"
+            delay = _retry_delay(error.retry_after, attempt)
             logger.warning(
-                "%s %s %s, retrying in %ds (attempt %d/%d)",
-                method.upper(),
-                path,
-                outcome,
+                "%s, retrying in %ds (attempt %d/%d)",
+                error,
                 delay,
                 attempt + 1,
                 max_retries_ + 1,
