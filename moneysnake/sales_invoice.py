@@ -104,13 +104,11 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
 
     def save(self) -> None:
         """Save the sales invoice."""
-        invoice_data = self.to_dict()
+        invoice_data = self._write_data()
         details = invoice_data.pop("details", [])
         for detail_id in self._destroyed_detail_ids:
             details.append({"id": detail_id, "_destroy": True})
         invoice_data["details_attributes"] = details
-        if "custom_fields" in invoice_data:
-            invoice_data["custom_fields_attributes"] = invoice_data.pop("custom_fields")
 
         if self.id is None:
             data = http_post(

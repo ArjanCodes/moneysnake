@@ -59,17 +59,20 @@ class Loadable(MoneybirdModel):
 class Saveable(MoneybirdModel):
     """Mixin that adds create/update capabilities (save, update_by_id)."""
 
+    def _write_data(self) -> dict[str, Any]:
+        return self.to_dict()
+
     def save(self) -> None:
         if self.id is None:
             data = http_post(
                 f"{self.endpoint}s",
-                data={self.endpoint: self.to_dict()},
+                data={self.endpoint: self._write_data()},
             )
             self.update(data)
         else:
             data = http_patch(
                 f"{self.endpoint}s/{self.id}",
-                data={self.endpoint: self.to_dict()},
+                data={self.endpoint: self._write_data()},
             )
             self.update(data)
 

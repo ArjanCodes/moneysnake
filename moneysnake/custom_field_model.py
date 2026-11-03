@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 from .model import CrudModel
 
@@ -9,7 +11,13 @@ class CustomField(BaseModel):
 
 
 class CustomFieldModel(CrudModel):
-    custom_fields: list[CustomField] = []
+    custom_fields: list[CustomField] = Field(default_factory=list)
+
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        if "custom_fields" in data:
+            data["custom_fields_attributes"] = data.pop("custom_fields")
+        return data
 
     def get_custom_field(self, field_id: int) -> str | None:
         for field in self.custom_fields:
