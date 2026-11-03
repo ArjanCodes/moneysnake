@@ -126,7 +126,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         """
         List all external sales invoices for a contact.
         """
-        endpoint = cls._sync_endpoint()
+        endpoint = cls._endpoint_name()
         data = paginate(
             f"{endpoint}s",
             params={"filter": f"contact_id:{contact_id},state:{state},period:{period}"},

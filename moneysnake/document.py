@@ -88,7 +88,7 @@ class Document(Synchronizable):
         return f"documents/{cls._resource}s"
 
     @classmethod
-    def _sync_endpoint(cls) -> str:
+    def _endpoint_name(cls) -> str:
         return f"documents/{cls._resource}"
 
     def load(self, id: int) -> None:
