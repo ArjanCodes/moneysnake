@@ -36,9 +36,11 @@ class FinancialStatement(Saveable, Deletable, MoneybirdModel):
 
         # For the POST and PATCH requests we need to use the details_attributes key
         # instead of details key to match the Moneybird API.
-        financial_statement_data["financial_mutations_attributes"] = (
-            financial_statement_data.pop("financial_mutations", [])
-        )
+        financial_statement_data.pop("financial_mutations", None)
+        financial_statement_data["financial_mutations_attributes"] = [
+            mutation.model_dump(exclude_unset=True)
+            for mutation in self.financial_mutations
+        ]
 
         if self.id is None:
             data = http_post(

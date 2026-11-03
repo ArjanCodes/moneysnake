@@ -135,6 +135,19 @@ def test_delete_detail_destroy_cleared_only_after_successful_save(
     mock_patch.assert_called_once()
 
 
+def test_appended_detail_sent_on_save(mocker: MockType):
+    mock_post = mocker.patch("moneysnake.document.http_post")
+    mock_post.return_value = {"id": 1}
+    invoice = PurchaseInvoice(contact_id=2)
+    invoice.details.append(
+        PurchaseInvoiceDetailsAttribute(description="Item", price="10.0", amount="1")
+    )
+    invoice.save()
+
+    sent = mock_post.call_args[1]["data"]["purchase_invoice"]["details_attributes"]
+    assert sent == [{"description": "Item", "price": "10.0", "amount": "1"}]
+
+
 
 
 def test_create_payment(

@@ -1,14 +1,14 @@
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_get, http_get_raw, http_patch, http_post, paginate
 from .custom_field_model import CustomFieldModel
-from .model import Synchronizable, ensure_list_of
+from .model import Synchronizable, Updatable, ensure_list_of
 from .payment import Payment
 
 
-class SalesInvoiceDetailsAttribute(BaseModel):
+class SalesInvoiceDetailsAttribute(Updatable):
     """Details attribute (line item) for a sales invoice."""
 
     id: int | None = None
@@ -22,11 +22,6 @@ class SalesInvoiceDetailsAttribute(BaseModel):
     product_id: int | str | None = None
     row_order: int | None = None
     model_config = ConfigDict(extra="ignore")
-
-    def update(self, data: dict[str, Any]) -> None:
-        validated = self.model_validate({**self.model_dump(), **data})
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
 
 
 class SalesInvoice(Synchronizable, CustomFieldModel):
@@ -104,12 +99,16 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
     def save(self) -> None:
         """Save the sales invoice."""
         invoice_data = self.to_dict()
-        details = invoice_data.pop("details", [])
+        invoice_data.pop("details", None)
+        custom_fields_set = invoice_data.pop("custom_fields", None) is not None
+        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
         for detail_id in self._destroyed_detail_ids:
             details.append({"id": detail_id, "_destroy": True})
         invoice_data["details_attributes"] = details
-        if "custom_fields" in invoice_data:
-            invoice_data["custom_fields_attributes"] = invoice_data.pop("custom_fields")
+        if custom_fields_set or self.custom_fields:
+            invoice_data["custom_fields_attributes"] = [
+                field.model_dump(exclude_unset=True) for field in self.custom_fields
+            ]
 
         if self.id is None:
             data = http_post(

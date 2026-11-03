@@ -13,7 +13,15 @@ def ensure_list_of(model_cls: type[T], value: list) -> list[T]:
     ]
 
 
-class MoneybirdModel(BaseModel):
+class Updatable(BaseModel):
+    def update(self, data: dict[str, Any]) -> None:
+        validated = self.model_validate({**self.model_dump(), **data})
+        for key in self.__class__.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
+
+
+class MoneybirdModel(Updatable):
     id: int | None = None
     model_config = ConfigDict(extra="ignore")
 
@@ -34,14 +42,7 @@ class MoneybirdModel(BaseModel):
         return self._endpoint_name()
 
     def to_dict(self) -> dict[str, Any]:
-        return self.model_dump(exclude_none=True)
-
-    def update(self, data: dict[str, Any]) -> None:
-        # Use model_validate to ensure field validators run
-        validated = self.model_validate({**self.model_dump(), **data})
-        # Copy validated field values directly (not via model_dump which converts to dicts)
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
+        return self.model_dump(exclude_unset=True)
 
 
 class Loadable(MoneybirdModel):
