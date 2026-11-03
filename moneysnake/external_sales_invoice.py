@@ -1,13 +1,13 @@
 from typing import Any, Self
 
-from pydantic import BaseModel, Field, PrivateAttr, field_validator
+from pydantic import Field, PrivateAttr, field_validator
 
 from .client import http_delete, http_patch, http_post, paginate
-from .model import CrudModel, Synchronizable, ensure_list_of
+from .model import CrudModel, Synchronizable, Updatable, ensure_list_of
 from .payment import Payment
 
 
-class ExternalSalesInvoiceDetailsAttribute(BaseModel):
+class ExternalSalesInvoiceDetailsAttribute(Updatable):
     """
     Details attribute for an external sales invoice.
     """
@@ -20,13 +20,6 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
     tax_rate_id: int | None = None
     ledger_account_id: str | None = None
     project_id: str | None = None
-
-    def update(self, data: dict[str, Any]) -> None:
-        validated = self.model_validate({**self.model_dump(), **data})
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
-        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
-
 
 
 class ExternalSalesInvoice(Synchronizable, CrudModel):
@@ -43,9 +36,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
     source: str | None = None
     source_url: str | None = None
     version: int | None = None
-    details: list[ExternalSalesInvoiceDetailsAttribute] | None = Field(
-        default_factory=list
-    )
+    details: list[ExternalSalesInvoiceDetailsAttribute] = Field(default_factory=list)
     payments: list[Payment] | None = Field(default_factory=list)
 
     _destroyed_detail_ids: list[int] = PrivateAttr(default_factory=list)
@@ -58,17 +49,20 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
             return None
         return ensure_list_of(Payment, value)
 
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("details", None)
+        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        data["details_attributes"] = details
+        return data
+
     def save(self) -> None:
         """
         Save the external sales invoice. Overrides the save method in MoneybirdModel.
         """
-        invoice_data = self.to_dict()
-        # For the POST and PATCH requests we need to use the details_attributes key
-        # instead of details key to match the Moneybird API.
-        details = invoice_data.pop("details", [])
-        for detail_id in self._destroyed_detail_ids:
-            details.append({"id": detail_id, "_destroy": True})
-        invoice_data["details_attributes"] = details
+        invoice_data = self._write_data()
 
         if self.id is None:
             data = http_post(
@@ -87,7 +81,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         """
         Add a detail to the external sales invoice.
         """
-        self.details = [*(self.details or []), detail]
+        self.details.append(detail)
 
     def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttribute:
         """
