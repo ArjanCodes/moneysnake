@@ -84,86 +84,87 @@ def _retry_delay(retry_after: str | None, attempt: int) -> int:
     return max(value, 1)
 
 
+_ERROR_CLASSES: dict[int, type[MoneybirdAPIError]] = {
+    404: MoneybirdNotFoundError,
+    422: MoneybirdValidationError,
+    429: MoneybirdRateLimitError,
+}
+
+
+def _send(
+    method: str,
+    path: str,
+    *,
+    json: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
+    files: dict[str, tuple[str, bytes, str]] | None = None,
+    follow_redirects: bool = False,
+) -> Response:
+    """Send one request to Moneybird and raise the matching error on failure."""
+    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
+    logger.debug("%s %s", method.upper(), fullpath)
+    response = httpx.request(
+        method,
+        fullpath,
+        json=json,
+        params=params,
+        files=files,
+        headers={"Authorization": f"Bearer {token_}"},
+        timeout=timeout_,
+        follow_redirects=follow_redirects,
+    )
+    if not response.is_error:
+        logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
+        return response
+    logger.warning(
+        "%s %s returned %d: %s",
+        method.upper(),
+        fullpath,
+        response.status_code,
+        response.text,
+    )
+    error_cls = _ERROR_CLASSES.get(response.status_code, MoneybirdAPIError)
+    raise error_cls(
+        status_code=response.status_code,
+        response_body=response.text,
+        method=method,
+        path=path,
+        retry_after=response.headers.get("Retry-After"),
+    )
+
+
 def make_request(
     path: str,
     data: dict[str, Any] | None = None,
     method: str = "post",
     params: dict[str, Any] | None = None,
 ) -> Any:
-    headers = {
-        "Authorization": f"Bearer {token_}",
-        "Content-Type": "application/json",
-    }
-    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
-
-    last_exc: httpx.HTTPStatusError | None = None
-    for attempt in range(max_retries_ + 1):
-        logger.debug("%s %s (attempt %d)", method.upper(), fullpath, attempt + 1)
-        response = httpx.request(
-            method,
-            fullpath,
-            json=data,
-            headers=headers,
-            timeout=timeout_,
-            params=params,
-        )
-
+    attempt = 0
+    while True:
         try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            last_exc = exc
-            if _is_retryable(response.status_code, method) and attempt < max_retries_:
-                delay = _retry_delay(response.headers.get("Retry-After"), attempt)
-                logger.warning(
-                    "%s %s returned %d, retrying in %ds (attempt %d/%d)",
-                    method.upper(),
-                    fullpath,
-                    response.status_code,
-                    delay,
-                    attempt + 1,
-                    max_retries_ + 1,
-                )
-                time.sleep(delay)
-                continue
-
-            body = response.text
-            logger.warning(
-                "%s %s returned %d: %s",
-                method.upper(),
-                fullpath,
-                response.status_code,
-                body,
+            response = _send(
+                method,
+                path,
+                json=data,
+                params=params,
             )
-            error_cls: type[MoneybirdAPIError] = {
-                404: MoneybirdNotFoundError,
-                422: MoneybirdValidationError,
-                429: MoneybirdRateLimitError,
-            }.get(response.status_code, MoneybirdAPIError)
-            raise error_cls(
-                status_code=response.status_code,
-                response_body=body,
-                method=method,
-                path=path,
-            ) from exc
-
-        logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
-        return response.json() if response.content else {}
-
-    # All retries exhausted — raise from last exception
-    assert last_exc is not None
-    body = last_exc.response.text
-    status_code = last_exc.response.status_code
-    error_cls = {
-        404: MoneybirdNotFoundError,
-        422: MoneybirdValidationError,
-        429: MoneybirdRateLimitError,
-    }.get(status_code, MoneybirdAPIError)
-    raise error_cls(
-        status_code=status_code,
-        response_body=body,
-        method=method,
-        path=path,
-    ) from last_exc
+        except MoneybirdAPIError as error:
+            if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
+                raise
+            delay = _retry_delay(error.retry_after, attempt)
+            logger.warning(
+                "%s %s returned %d, retrying in %ds (attempt %d/%d)",
+                method.upper(),
+                path,
+                error.status_code,
+                delay,
+                attempt + 1,
+                max_retries_ + 1,
+            )
+            time.sleep(delay)
+            attempt += 1
+        else:
+            return response.json() if response.content else {}
 
 
 def http_get(path: str, params: dict[str, Any] | None = None) -> Any:
@@ -171,15 +172,12 @@ def http_get(path: str, params: dict[str, Any] | None = None) -> Any:
 
 
 def http_get_raw(path: str) -> Response:
-    """Perform a GET and return the raw httpx Response (for binary downloads)."""
-    headers = {
-        "Authorization": f"Bearer {token_}",
-    }
-    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
-    logger.debug("GET %s (raw)", fullpath)
-    response = httpx.get(fullpath, headers=headers, timeout=timeout_)
-    response.raise_for_status()
-    return response
+    """Perform a GET and return the raw httpx Response (for binary downloads).
+
+    Follows redirects, because download endpoints redirect to a short-lived URL.
+    Downloads aren't retried.
+    """
+    return _send("get", path, follow_redirects=True)
 
 
 def http_post(path: str, data: dict[str, Any] | None = None) -> Any:
@@ -207,31 +205,7 @@ def http_post_file(
     httpx sets the multipart Content-Type (with boundary) itself, so we only
     pass the Authorization header. Uploads aren't retried.
     """
-    headers = {"Authorization": f"Bearer {token_}"}
-    fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
-    logger.debug("POST %s (multipart upload)", fullpath)
-    response = httpx.post(
-        fullpath,
-        headers=headers,
-        files={field: (filename, content, content_type)},
-        timeout=timeout_,
-    )
-    try:
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        body = response.text
-        logger.warning("POST %s returned %d: %s", fullpath, response.status_code, body)
-        error_cls: type[MoneybirdAPIError] = {
-            404: MoneybirdNotFoundError,
-            422: MoneybirdValidationError,
-            429: MoneybirdRateLimitError,
-        }.get(response.status_code, MoneybirdAPIError)
-        raise error_cls(
-            status_code=response.status_code,
-            response_body=body,
-            method="post",
-            path=path,
-        ) from exc
+    response = _send("post", path, files={field: (filename, content, content_type)})
     return response.json() if response.content else {}
 
 
