@@ -338,6 +338,23 @@ def test_delete_detail_destroy_kept_after_failed_save(
     assert invoice._destroyed_detail_ids == [433546254876673836]
 
 
+def test_appended_detail_sent_on_save(mocker: MockType):
+    mock_post = mocker.patch("moneysnake.external_sales_invoice.http_post")
+    mock_post.return_value = {"id": 1}
+    invoice = ExternalSalesInvoice(contact_id=2)
+    invoice.details.append(
+        ExternalSalesInvoiceDetailsAttribute(
+            description="Item", price="10.0", amount="1"
+        )
+    )
+    invoice.save()
+
+    sent = mock_post.call_args[1]["data"]["external_sales_invoice"][
+        "details_attributes"
+    ]
+    assert sent == [{"description": "Item", "price": "10.0", "amount": "1"}]
+
+
 def test_find_by_id_converts_payments_to_objects(
     mocker: MockType,
     ext_invoice_data: dict[str, Any],

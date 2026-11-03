@@ -13,33 +13,39 @@ def ensure_list_of(model_cls: type[T], value: list) -> list[T]:
     ]
 
 
-class MoneybirdModel(BaseModel):
+class Updatable(BaseModel):
+    def update(self, data: dict[str, Any]) -> None:
+        validated = self.model_validate({**self.model_dump(), **data})
+        for key in self.__class__.model_fields:
+            object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
+
+
+class MoneybirdModel(Updatable):
     id: int | None = None
     model_config = ConfigDict(extra="ignore")
 
     _endpoint: str | None = None
 
+    @classmethod
+    def _endpoint_name(cls) -> str:
+        pattr = cls.__private_attributes__.get("_endpoint")
+        default = pattr.default if pattr is not None else None
+        if isinstance(default, str):
+            return default
+        return "".join(
+            "_" + c.lower() if c.isupper() else c for c in cls.__name__
+        ).lstrip("_")
+
     @property
     def endpoint(self) -> str:
-        if self._endpoint is not None:
-            return self._endpoint
-        return "".join(
-            [
-                "_" + letter.lower() if letter.isupper() else letter
-                for letter in self.__class__.__name__
-            ]
-        ).lstrip("_")
+        return self._endpoint_name()
 
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(exclude_unset=True)
 
-    def update(self, data: dict[str, Any]) -> None:
-        # Use model_validate to ensure field validators run
-        validated = self.model_validate({**self.model_dump(), **data})
-        # Copy validated field values directly (not via model_dump which converts to dicts)
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
-        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
+    def _write_data(self) -> dict[str, Any]:
+        return self.to_dict()
 
 
 class Loadable(MoneybirdModel):
@@ -58,9 +64,6 @@ class Loadable(MoneybirdModel):
 
 class Saveable(MoneybirdModel):
     """Mixin that adds create/update capabilities (save, update_by_id)."""
-
-    def _write_data(self) -> dict[str, Any]:
-        return self.to_dict()
 
     def save(self) -> None:
         if self.id is None:
@@ -113,7 +116,7 @@ class Synchronizable(MoneybirdModel):
         params: dict[str, str] = {}
         if filter:
             params["filter"] = filter
-        return http_get(f"{cls._sync_endpoint()}s/synchronization", params=params or None)
+        return http_get(f"{cls._endpoint_name()}s/synchronization", params=params or None)
 
     @classmethod
     def sync_fetch(cls: type[Self], ids: list[int]) -> list[Self]:
@@ -124,22 +127,12 @@ class Synchronizable(MoneybirdModel):
         if len(ids) > 100:
             raise ValueError("sync_fetch supports a maximum of 100 IDs per request")
         data = http_post(
-            f"{cls._sync_endpoint()}s/synchronization",
+            f"{cls._endpoint_name()}s/synchronization",
             data={"ids": ids},
         )
         if not isinstance(data, list):
             return []
         return [cls(**item) for item in data]
-
-    @classmethod
-    def _sync_endpoint(cls) -> str:
-        """Derive the endpoint name for synchronization."""
-        pattr = cls.__private_attributes__.get("_endpoint")
-        if pattr is not None and pattr.default is not None:
-            return str(pattr.default)
-        return "".join(
-            "_" + c.lower() if c.isupper() else c for c in cls.__name__
-        ).lstrip("_")
 
 
 class CrudModel(Loadable, Saveable, Deletable, MoneybirdModel):

@@ -15,8 +15,11 @@ class CustomFieldModel(CrudModel):
 
     def _write_data(self) -> dict[str, Any]:
         data = super()._write_data()
-        if "custom_fields" in data:
-            data["custom_fields_attributes"] = data.pop("custom_fields")
+        was_set = data.pop("custom_fields", None) is not None
+        if was_set or self.custom_fields:
+            data["custom_fields_attributes"] = [
+                field.model_dump(exclude_unset=True) for field in self.custom_fields
+            ]
         return data
 
     def get_custom_field(self, field_id: int) -> str | None:
@@ -30,4 +33,4 @@ class CustomFieldModel(CrudModel):
             if field.id == field_id:
                 field.value = value
                 return
-        self.custom_fields = [*self.custom_fields, CustomField(id=field_id, value=value)]
+        self.custom_fields.append(CustomField(id=field_id, value=value))
