@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Self
@@ -118,9 +117,7 @@ class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
         )
         filter_parts = [f"period:{formatted_period}"]
 
-        if query_string and re.match(
-            r"^[\w]+:[\w\s\-\.]+(?:,[\w]+:[\w\s\-\.]+)*$", query_string
-        ):
+        if query_string:
             filter_parts.insert(0, query_string)
 
         if financial_account_id:
