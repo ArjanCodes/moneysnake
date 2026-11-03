@@ -49,18 +49,20 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
             return None
         return ensure_list_of(Payment, value)
 
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("details", None)
+        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
+        for detail_id in self._destroyed_detail_ids:
+            details.append({"id": detail_id, "_destroy": True})
+        data["details_attributes"] = details
+        return data
+
     def save(self) -> None:
         """
         Save the external sales invoice. Overrides the save method in MoneybirdModel.
         """
-        invoice_data = self.to_dict()
-        # For the POST and PATCH requests we need to use the details_attributes key
-        # instead of details key to match the Moneybird API.
-        invoice_data.pop("details", None)
-        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
-        for detail_id in self._destroyed_detail_ids:
-            details.append({"id": detail_id, "_destroy": True})
-        invoice_data["details_attributes"] = details
+        invoice_data = self._write_data()
 
         if self.id is None:
             data = http_post(

@@ -28,19 +28,20 @@ class FinancialStatement(Saveable, Deletable, MoneybirdModel):
             return None
         return ensure_list_of(FinancialMutation, value)
 
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("financial_mutations", None)
+        data["financial_mutations_attributes"] = [
+            mutation.model_dump(exclude_unset=True)
+            for mutation in self.financial_mutations
+        ]
+        return data
+
     def save(self) -> None:
         """
         Save the financial statement. Overrides the save method in MoneybirdModel.
         """
-        financial_statement_data = self.to_dict()
-
-        # For the POST and PATCH requests we need to use the details_attributes key
-        # instead of details key to match the Moneybird API.
-        financial_statement_data.pop("financial_mutations", None)
-        financial_statement_data["financial_mutations_attributes"] = [
-            mutation.model_dump(exclude_unset=True)
-            for mutation in self.financial_mutations
-        ]
+        financial_statement_data = self._write_data()
 
         if self.id is None:
             data = http_post(

@@ -101,13 +101,17 @@ class Document(Synchronizable):
         entity.load(id)
         return entity
 
-    def save(self) -> None:
-        body = self.to_dict()
-        body.pop("details", None)
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("details", None)
         details = [detail.model_dump(exclude_unset=True) for detail in self.details]
         for detail_id in self._destroyed_detail_ids:
             details.append({"id": detail_id, "_destroy": True})
-        body["details_attributes"] = details
+        data["details_attributes"] = details
+        return data
+
+    def save(self) -> None:
+        body = self._write_data()
 
         if self.id is None:
             data = http_post(self._base_path(), data={self._resource: body})

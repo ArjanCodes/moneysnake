@@ -96,19 +96,18 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
             return []
         return ensure_list_of(SalesInvoiceDetailsAttribute, value)
 
-    def save(self) -> None:
-        """Save the sales invoice."""
-        invoice_data = self.to_dict()
-        invoice_data.pop("details", None)
-        custom_fields_set = invoice_data.pop("custom_fields", None) is not None
+    def _write_data(self) -> dict[str, Any]:
+        data = super()._write_data()
+        data.pop("details", None)
         details = [detail.model_dump(exclude_unset=True) for detail in self.details]
         for detail_id in self._destroyed_detail_ids:
             details.append({"id": detail_id, "_destroy": True})
-        invoice_data["details_attributes"] = details
-        if custom_fields_set or self.custom_fields:
-            invoice_data["custom_fields_attributes"] = [
-                field.model_dump(exclude_unset=True) for field in self.custom_fields
-            ]
+        data["details_attributes"] = details
+        return data
+
+    def save(self) -> None:
+        """Save the sales invoice."""
+        invoice_data = self._write_data()
 
         if self.id is None:
             data = http_post(

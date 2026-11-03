@@ -164,6 +164,19 @@ def test_update_existing_invoice(mocker: MockType, invoice_data: dict[str, Any])
     assert invoice.id is not None
 
 
+def test_save_sends_custom_fields_attributes(
+    mocker: MockType, invoice_data: dict[str, Any]
+):
+    mock_patch = mocker.patch("moneysnake.sales_invoice.http_patch")
+    mock_patch.return_value = invoice_data
+    invoice = SalesInvoice(**invoice_data)
+    invoice.set_custom_field(456, "some value")
+    invoice.save()
+    sent = mock_patch.call_args[1]["data"]["sales_invoice"]
+    assert sent["custom_fields_attributes"] == [{"id": 456, "value": "some value"}]
+    assert "custom_fields" not in sent
+
+
 def test_find_by_id(mocker: MockType, invoice_data: dict[str, Any]):
     mocker.patch("moneysnake.model.http_get", return_value=invoice_data)
     invoice = SalesInvoice.find_by_id(550000000000000001)

@@ -44,6 +44,9 @@ class MoneybirdModel(Updatable):
     def to_dict(self) -> dict[str, Any]:
         return self.model_dump(exclude_unset=True)
 
+    def _write_data(self) -> dict[str, Any]:
+        return self.to_dict()
+
 
 class Loadable(MoneybirdModel):
     """Mixin that adds read capabilities (load, find_by_id)."""
@@ -66,13 +69,13 @@ class Saveable(MoneybirdModel):
         if self.id is None:
             data = http_post(
                 f"{self.endpoint}s",
-                data={self.endpoint: self.to_dict()},
+                data={self.endpoint: self._write_data()},
             )
             self.update(data)
         else:
             data = http_patch(
                 f"{self.endpoint}s/{self.id}",
-                data={self.endpoint: self.to_dict()},
+                data={self.endpoint: self._write_data()},
             )
             self.update(data)
 
