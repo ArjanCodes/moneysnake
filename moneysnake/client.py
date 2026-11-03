@@ -98,7 +98,6 @@ def _send(
     json: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
     files: dict[str, tuple[str, bytes, str]] | None = None,
-    headers: dict[str, str] | None = None,
     follow_redirects: bool = False,
 ) -> Response:
     """Send one request to Moneybird and raise the matching error on failure."""
@@ -110,7 +109,7 @@ def _send(
         json=json,
         params=params,
         files=files,
-        headers={"Authorization": f"Bearer {token_}", **(headers or {})},
+        headers={"Authorization": f"Bearer {token_}"},
         timeout=timeout_,
         follow_redirects=follow_redirects,
     )
@@ -148,7 +147,6 @@ def make_request(
                 path,
                 json=data,
                 params=params,
-                headers={"Content-Type": "application/json"},
             )
         except MoneybirdAPIError as error:
             if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
