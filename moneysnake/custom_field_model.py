@@ -22,4 +22,4 @@ class CustomFieldModel(CrudModel):
             if field.id == field_id:
                 field.value = value
                 return
-        self.custom_fields.append(CustomField(id=field_id, value=value))
+        self.custom_fields = [*self.custom_fields, CustomField(id=field_id, value=value)]

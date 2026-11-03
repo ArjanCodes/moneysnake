@@ -33,6 +33,7 @@ class DocumentDetailsAttribute(BaseModel):
         validated = self.model_validate({**self.model_dump(), **data})
         for key in self.__class__.model_fields:
             object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 class Document(Synchronizable):
@@ -129,7 +130,7 @@ class Document(Synchronizable):
         self.id = None
 
     def add_detail(self, detail: DocumentDetailsAttribute) -> None:
-        self.details.append(detail)
+        self.details = [*self.details, detail]
 
     def get_detail(self, detail_id: int) -> DocumentDetailsAttribute:
         for detail in self.details:

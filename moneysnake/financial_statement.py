@@ -57,4 +57,4 @@ class FinancialStatement(Saveable, Deletable, MoneybirdModel):
         """
         Add a financial mutation to the financial statement.
         """
-        self.financial_mutations.append(financial_mutation)
+        self.financial_mutations = [*self.financial_mutations, financial_mutation]

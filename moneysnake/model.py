@@ -31,7 +31,7 @@ class MoneybirdModel(BaseModel):
         ).lstrip("_")
 
     def to_dict(self) -> dict[str, Any]:
-        return self.model_dump(exclude_none=True)
+        return self.model_dump(exclude_unset=True)
 
     def update(self, data: dict[str, Any]) -> None:
         # Use model_validate to ensure field validators run
@@ -39,6 +39,7 @@ class MoneybirdModel(BaseModel):
         # Copy validated field values directly (not via model_dump which converts to dicts)
         for key in self.__class__.model_fields:
             object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 class Loadable(MoneybirdModel):

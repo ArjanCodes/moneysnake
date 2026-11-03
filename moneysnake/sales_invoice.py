@@ -27,6 +27,7 @@ class SalesInvoiceDetailsAttribute(BaseModel):
         validated = self.model_validate({**self.model_dump(), **data})
         for key in self.__class__.model_fields:
             object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 class SalesInvoice(Synchronizable, CustomFieldModel):
@@ -127,7 +128,7 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
     # --- Detail management ---
 
     def add_detail(self, detail: SalesInvoiceDetailsAttribute) -> None:
-        self.details.append(detail)
+        self.details = [*self.details, detail]
 
     def get_detail(self, detail_id: int) -> SalesInvoiceDetailsAttribute:
         for detail in self.details:

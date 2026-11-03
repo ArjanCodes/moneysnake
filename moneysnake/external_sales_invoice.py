@@ -25,6 +25,7 @@ class ExternalSalesInvoiceDetailsAttribute(BaseModel):
         validated = self.model_validate({**self.model_dump(), **data})
         for key in self.__class__.model_fields:
             object.__setattr__(self, key, getattr(validated, key))
+        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 
@@ -85,10 +86,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
         """
         Add a detail to the external sales invoice.
         """
-        if self.details is None:
-            self.details = []
-
-        self.details.append(detail)
+        self.details = [*(self.details or []), detail]
 
     def get_detail(self, detail_id: int) -> ExternalSalesInvoiceDetailsAttribute:
         """
