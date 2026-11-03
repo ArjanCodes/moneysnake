@@ -41,7 +41,7 @@ class LedgerAccountBooking(MoneybirdModel):
     A ledger account booking linked to a financial mutation.
     """
 
-    administration_id: str | int | None = None
+    administration_id: int | None = None
     financial_mutation_id: int | None = None
     ledger_account_id: int | None = None
     project_id: int | None = None
@@ -56,7 +56,7 @@ class FinancialMutationPayment(MoneybirdModel):
     A payment linked to a financial mutation, as returned by the API.
     """
 
-    administration_id: str | int | None = None
+    administration_id: int | None = None
     invoice_type: str | None = None
     invoice_id: int | None = None
     financial_account_id: int | None = None
