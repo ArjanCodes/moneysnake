@@ -9,6 +9,8 @@ class MoneybirdError(Exception):
 class MoneybirdTransientError(MoneybirdError):
     """Base for failures that may succeed when the request is repeated later."""
 
+    retry_after: str | None = None
+
 
 class MoneybirdPermanentError(MoneybirdError):
     """Base for failures that will fail again when the same request is repeated."""
