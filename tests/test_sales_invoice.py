@@ -255,6 +255,19 @@ def test_delete_detail_destroy_kept_after_failed_save(
     assert invoice._destroyed_detail_ids == [550000000000000100]
 
 
+def test_appended_detail_sent_on_save(mocker: MockType):
+    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
+    mock_post.return_value = {"id": 1}
+    invoice = SalesInvoice(contact_id=2)
+    invoice.details.append(
+        SalesInvoiceDetailsAttribute(description="Item", price="10.0", amount="1")
+    )
+    invoice.save()
+
+    sent = mock_post.call_args[1]["data"]["sales_invoice"]["details_attributes"]
+    assert sent == [{"description": "Item", "price": "10.0", "amount": "1"}]
+
+
 # --- Payment management ---
 
 

@@ -1,6 +1,6 @@
 from typing import Any, ClassVar, Self
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, PrivateAttr, field_validator
 
 from .client import (
     http_delete,
@@ -10,11 +10,11 @@ from .client import (
     http_post_file,
     paginate,
 )
-from .model import Synchronizable, ensure_list_of
+from .model import Synchronizable, Updatable, ensure_list_of
 from .payment import Payment
 
 
-class DocumentDetailsAttribute(BaseModel):
+class DocumentDetailsAttribute(Updatable):
     """Details attribute (line item) for a purchase invoice or receipt."""
 
     id: int | None = None
@@ -28,12 +28,6 @@ class DocumentDetailsAttribute(BaseModel):
     product_id: int | str | None = None
     row_order: int | None = None
     model_config = ConfigDict(extra="ignore")
-
-    def update(self, data: dict[str, Any]) -> None:
-        validated = self.model_validate({**self.model_dump(), **data})
-        for key in self.__class__.model_fields:
-            object.__setattr__(self, key, getattr(validated, key))
-        self.__pydantic_fields_set__.update(data.keys() & self.__class__.model_fields.keys())
 
 
 class Document(Synchronizable):
@@ -94,7 +88,7 @@ class Document(Synchronizable):
         return f"documents/{cls._resource}s"
 
     @classmethod
-    def _sync_endpoint(cls) -> str:
+    def _endpoint_name(cls) -> str:
         return f"documents/{cls._resource}"
 
     def load(self, id: int) -> None:
@@ -109,7 +103,8 @@ class Document(Synchronizable):
 
     def save(self) -> None:
         body = self.to_dict()
-        details = body.pop("details", [])
+        body.pop("details", None)
+        details = [detail.model_dump(exclude_unset=True) for detail in self.details]
         for detail_id in self._destroyed_detail_ids:
             details.append({"id": detail_id, "_destroy": True})
         body["details_attributes"] = details
@@ -130,7 +125,7 @@ class Document(Synchronizable):
         self.id = None
 
     def add_detail(self, detail: DocumentDetailsAttribute) -> None:
-        self.details = [*self.details, detail]
+        self.details.append(detail)
 
     def get_detail(self, detail_id: int) -> DocumentDetailsAttribute:
         for detail in self.details:
