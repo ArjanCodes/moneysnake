@@ -398,3 +398,8 @@ def test_load_converts_payments_to_objects(
     assert len(invoice.payments) == 1
     assert isinstance(invoice.payments[0], ExternalSalesInvoicePayment)
     assert invoice.payments[0].id == 433546259519768528
+
+
+def test_load_keeps_version(ext_invoice_data: dict[str, Any]):
+    invoice = ExternalSalesInvoice.model_validate(ext_invoice_data)
+    assert invoice.version == ext_invoice_data["version"]
