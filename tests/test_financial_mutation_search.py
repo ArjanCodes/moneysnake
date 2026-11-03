@@ -102,3 +102,15 @@ def test_search_default_period_uses_current_day_per_call(mocker: MockType):
         "period:20240301..20240301",
         "period:20240302..20240302",
     ]
+
+
+def test_search_passes_query_string_through_unchanged(mocker: MockType):
+    mock_paginate = mocker.patch("moneysnake.financial_mutation.paginate")
+    mock_paginate.return_value = []
+
+    FinancialMutation.search(query_string="state:open,amount:>100", period="202301")
+
+    mock_paginate.assert_called_once_with(
+        "financial_mutations",
+        params={"filter": "state:open,amount:>100,period:202301"},
+    )
