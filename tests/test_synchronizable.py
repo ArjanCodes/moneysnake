@@ -20,47 +20,59 @@ def fixture_sync_ids() -> list[dict[str, Any]]:
 
 class TestSyncList:
     def test_sync_list_contacts(self, mocker: MockType, sync_ids: list[dict[str, Any]]):
-        mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
+        mock_get = mocker.patch("moneysnake.model.http_get", return_value=sync_ids)
         result = Contact.sync_list()
         assert len(result) == 3
         assert result[0]["id"] == 1
-        mock_paginate.assert_called_once_with("contacts/synchronization", params=None)
+        mock_get.assert_called_once_with("contacts/synchronization", params=None)
 
     def test_sync_list_with_filter(
         self, mocker: MockType, sync_ids: list[dict[str, Any]]
     ):
-        mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
+        mock_get = mocker.patch("moneysnake.model.http_get", return_value=sync_ids)
         Contact.sync_list(filter="state:active")
-        mock_paginate.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "contacts/synchronization", params={"filter": "state:active"}
         )
 
     def test_sync_list_sales_invoices(
         self, mocker: MockType, sync_ids: list[dict[str, Any]]
     ):
-        mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
+        mock_get = mocker.patch("moneysnake.model.http_get", return_value=sync_ids)
         result = SalesInvoice.sync_list()
         assert len(result) == 3
-        mock_paginate.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "sales_invoices/synchronization", params=None
         )
 
     def test_sync_list_external_sales_invoices(
         self, mocker: MockType, sync_ids: list[dict[str, Any]]
     ):
-        mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
+        mock_get = mocker.patch("moneysnake.model.http_get", return_value=sync_ids)
         ExternalSalesInvoice.sync_list()
-        mock_paginate.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "external_sales_invoices/synchronization", params=None
         )
 
     def test_sync_list_financial_mutations(
         self, mocker: MockType, sync_ids: list[dict[str, Any]]
     ):
-        mock_paginate = mocker.patch("moneysnake.model.paginate", return_value=sync_ids)
+        mock_get = mocker.patch("moneysnake.model.http_get", return_value=sync_ids)
         FinancialMutation.sync_list()
-        mock_paginate.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "financial_mutations/synchronization", params=None
+        )
+
+
+    def test_sync_list_single_request_over_100(self, mocker: MockType):
+        items = [{"id": i, "version": i} for i in range(250)]
+        mock_request = mocker.patch(
+            "moneysnake.client.make_request", return_value=items
+        )
+        result = Contact.sync_list()
+        assert result == items
+        mock_request.assert_called_once_with(
+            "contacts/synchronization", method="get", params=None
         )
 
 

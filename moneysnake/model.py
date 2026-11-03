@@ -2,7 +2,7 @@ from typing import Any, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
-from .client import http_delete, http_get, http_patch, http_post, paginate
+from .client import http_delete, http_get, http_patch, http_post
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -109,7 +109,7 @@ class Synchronizable(MoneybirdModel):
         params: dict[str, str] = {}
         if filter:
             params["filter"] = filter
-        return paginate(f"{cls._sync_endpoint()}s/synchronization", params=params or None)
+        return http_get(f"{cls._sync_endpoint()}s/synchronization", params=params or None)
 
     @classmethod
     def sync_fetch(cls: type[Self], ids: list[int]) -> list[Self]:
@@ -132,7 +132,7 @@ class Synchronizable(MoneybirdModel):
         """Derive the endpoint name for synchronization."""
         pattr = cls.__private_attributes__.get("_endpoint")
         if pattr is not None and pattr.default is not None:
-            return pattr.default
+            return str(pattr.default)
         return "".join(
             "_" + c.lower() if c.isupper() else c for c in cls.__name__
         ).lstrip("_")
