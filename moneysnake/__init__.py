@@ -32,6 +32,7 @@ from .financial_mutation import (
 )
 from .financial_mutation import LedgerAccountBooking as LedgerAccountBooking
 from .financial_statement import FinancialStatement as FinancialStatement
+from .ledger_account import LedgerAccount as LedgerAccount
 from .model import CrudModel as CrudModel
 from .model import Deletable as Deletable
 from .model import Loadable as Loadable
@@ -73,6 +74,7 @@ __all__ = [
     "FinancialMutation",
     "FinancialMutationPayment",
     "FinancialStatement",
+    "LedgerAccount",
     "LedgerAccountBooking",
     "Loadable",
     "MoneybirdAPIError",
