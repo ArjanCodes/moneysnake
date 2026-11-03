@@ -1,7 +1,7 @@
 import logging
 import math
 import time
-from typing import Any, NoReturn
+from typing import Any
 
 import httpx
 from httpx import Response
@@ -110,16 +110,6 @@ def _error_class(status_code: int) -> type[MoneybirdAPIError]:
     return MoneybirdClientError
 
 
-def _raise_api_error(response: Response, method: str, path: str) -> NoReturn:
-    error_cls = _error_class(response.status_code)
-    raise error_cls(
-        status_code=response.status_code,
-        response_body=response.text,
-        method=method,
-        path=path,
-    )
-
-
 def _send(
     method: str,
     path: str,
@@ -129,12 +119,8 @@ def _send(
     files: dict[str, tuple[str, bytes, str]] | None = None,
     headers: dict[str, str] | None = None,
     follow_redirects: bool = False,
-    retry: bool = False,
 ) -> Response:
-    """Send one request to Moneybird and raise the matching error on failure.
-
-    With retry=True, a retryable error response is returned instead of raised.
-    """
+    """Send one request to Moneybird and raise the matching error on failure."""
     fullpath = f"{MB_URL}/{MB_VERSION_ID}/{admin_id_}/{path}"
     logger.debug("%s %s", method.upper(), fullpath)
     try:
@@ -155,8 +141,6 @@ def _send(
     if not response.is_error:
         logger.debug("%s %s returned %d", method.upper(), fullpath, response.status_code)
         return response
-    if retry and _is_retryable(response.status_code, method):
-        return response
     logger.warning(
         "%s %s returned %d: %s",
         method.upper(),
@@ -164,7 +148,14 @@ def _send(
         response.status_code,
         response.text,
     )
-    _raise_api_error(response, method, path)
+    error_cls = _error_class(response.status_code)
+    raise error_cls(
+        status_code=response.status_code,
+        response_body=response.text,
+        method=method,
+        path=path,
+        retry_after=response.headers.get("Retry-After"),
+    )
 
 
 def make_request(
@@ -182,19 +173,19 @@ def make_request(
                 json=data,
                 params=params,
                 headers={"Content-Type": "application/json"},
-                retry=attempt < max_retries_,
             )
         except MoneybirdConnectionError:
             if attempt >= max_retries_ or method.lower() not in _IDEMPOTENT_METHODS:
                 raise
             delay = _retry_delay(None, attempt)
             outcome = "failed"
+        except MoneybirdAPIError as error:
+            if attempt >= max_retries_ or not _is_retryable(error.status_code, method):
+                raise
+            delay = _retry_delay(error.retry_after, attempt)
+            outcome = f"returned {error.status_code}"
         else:
-            if not response.is_error:
-                return response.json() if response.content else {}
-            delay = _retry_delay(response.headers.get("Retry-After"), attempt)
-            outcome = f"returned {response.status_code}"
-
+            return response.json() if response.content else {}
         logger.warning(
             "%s %s %s, retrying in %ds (attempt %d/%d)",
             method.upper(),
