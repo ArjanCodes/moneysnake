@@ -152,3 +152,11 @@ def test_delete_by_id(mocker: MockType):
     mocker.patch("moneysnake.model.http_delete")
     model = CrudModel.delete_by_id(1)
     assert model.id is None
+
+
+def test_endpoint_derived_from_class_name():
+    class TaxRateGroup(MoneybirdModel):
+        pass
+
+    assert TaxRateGroup._endpoint_name() == "tax_rate_group"
+    assert TaxRateGroup().endpoint == "tax_rate_group"

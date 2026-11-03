@@ -3,6 +3,7 @@ from typing import Any
 from pytest_mock import MockType
 
 from moneysnake.contact import Contact
+from moneysnake.custom_field_model import CustomField
 
 
 def test_find_by_customer_id(mocker: MockType, contact_data: dict[str, Any]):
@@ -75,6 +76,16 @@ def test_create_sends_custom_fields_attributes(mocker: MockType):
     mock_post = mocker.patch("moneysnake.model.http_post", return_value={"id": 1})
     contact = Contact(company_name="Acme")
     contact.set_custom_field(456, "some value")
+    contact.save()
+    sent = mock_post.call_args[1]["data"]["contact"]
+    assert sent["custom_fields_attributes"] == [{"id": 456, "value": "some value"}]
+    assert "custom_fields" not in sent
+
+
+def test_appended_custom_field_sent_on_save(mocker: MockType):
+    mock_post = mocker.patch("moneysnake.model.http_post", return_value={"id": 1})
+    contact = Contact(company_name="Acme")
+    contact.custom_fields.append(CustomField(id=456, value="some value"))
     contact.save()
     sent = mock_post.call_args[1]["data"]["contact"]
     assert sent["custom_fields_attributes"] == [{"id": 456, "value": "some value"}]

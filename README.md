@@ -36,7 +36,7 @@ Every error the library raises is a `MoneybirdError`. Each error is also either 
 
 The library retries rate limits, and it retries server errors and connection errors only for requests that are safe to repeat, such as GET and DELETE. It raises the error when the retries are used up.
 
-A `MoneybirdAPIError` keeps the raw body in `response_body` and parses it for you. `message` gives the error message, `field_errors` gives the messages per field, `field_error_codes` gives the error codes per field, and `symbolic` gives the symbolic error codes when Moneybird sends them.
+A `MoneybirdAPIError` keeps the raw body in `response_body` and the parsed JSON object in `body`. `message` gives the error message, `field_errors` gives the messages per field, `field_error_codes` gives the error codes per field, and `symbolic` gives the symbolic error codes when Moneybird sends them. `retry_after` holds the raw Retry-After header, or `None` when there is none.
 
 ```python
 from moneysnake import Contact, MoneybirdValidationError

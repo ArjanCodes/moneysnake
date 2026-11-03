@@ -47,5 +47,5 @@ def test_add_detail(document_data: dict[str, Any]):
     assert len(receipt.details) == 2
 
 
-def test_sync_endpoint():
-    assert Receipt._sync_endpoint() == "documents/receipt"
+def test_endpoint_name():
+    assert Receipt._endpoint_name() == "documents/receipt"
