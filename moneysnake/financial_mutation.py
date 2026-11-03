@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Self
+from typing import Self
 
 from pydantic import Field
 
@@ -36,6 +36,45 @@ class UnlinkBookingType(Enum):
     Payment = auto()
 
 
+class LedgerAccountBooking(MoneybirdModel):
+    """
+    A ledger account booking linked to a financial mutation.
+    """
+
+    administration_id: int | None = None
+    financial_mutation_id: int | None = None
+    ledger_account_id: int | None = None
+    project_id: int | None = None
+    description: str | None = None
+    price: float | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class FinancialMutationPayment(MoneybirdModel):
+    """
+    A payment linked to a financial mutation, as returned by the API.
+    """
+
+    administration_id: int | None = None
+    invoice_type: str | None = None
+    invoice_id: int | None = None
+    financial_account_id: int | None = None
+    user_id: int | None = None
+    payment_transaction_id: int | None = None
+    transaction_identifier: str | None = None
+    price: float | None = None
+    price_base: float | None = None
+    payment_date: str | None = None
+    credit_invoice_id: int | None = None
+    financial_mutation_id: int | None = None
+    ledger_account_id: int | None = None
+    linked_payment_id: int | None = None
+    manual_payment_action: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
 class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
     """
     Represents a financial mutation in Moneybird.
@@ -62,8 +101,8 @@ class FinancialMutation(Synchronizable, Loadable, MoneybirdModel):
     financial_statement_id: str | None = None
     processed_at: str | None = None
     account_servicer_transaction_id: str | None = None
-    payments: list[dict[str, Any]] = Field(default_factory=list)
-    ledger_account_bookings: list[dict[str, Any]] = Field(default_factory=list)
+    payments: list[FinancialMutationPayment] = Field(default_factory=list)
+    ledger_account_bookings: list[LedgerAccountBooking] = Field(default_factory=list)
 
     def book_payment(
         self,

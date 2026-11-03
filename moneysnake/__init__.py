@@ -27,6 +27,10 @@ from .external_sales_invoice import (
     ExternalSalesInvoiceDetailsAttribute as ExternalSalesInvoiceDetailsAttribute,
 )
 from .financial_mutation import FinancialMutation as FinancialMutation
+from .financial_mutation import (
+    FinancialMutationPayment as FinancialMutationPayment,
+)
+from .financial_mutation import LedgerAccountBooking as LedgerAccountBooking
 from .financial_statement import FinancialStatement as FinancialStatement
 from .model import CrudModel as CrudModel
 from .model import Deletable as Deletable
@@ -67,7 +71,9 @@ __all__ = [
     "ExternalSalesInvoice",
     "ExternalSalesInvoiceDetailsAttribute",
     "FinancialMutation",
+    "FinancialMutationPayment",
     "FinancialStatement",
+    "LedgerAccountBooking",
     "Loadable",
     "MoneybirdAPIError",
     "MoneybirdAuthenticationError",
