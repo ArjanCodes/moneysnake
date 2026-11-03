@@ -1,9 +1,19 @@
-from typing import Any, Self
+from typing import Self
 
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .client import http_get
 from .model import Loadable, MoneybirdModel
+
+
+class TaxonomyItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    taxonomy_version: str | None = None
+    code: str | None = None
+    name: str | None = None
+    name_english: str | None = None
+    reference: str | None = None
 
 
 class LedgerAccount(Loadable, MoneybirdModel):
@@ -18,7 +28,7 @@ class LedgerAccount(Loadable, MoneybirdModel):
     parent_id: int | None = None
     active: bool | None = None
     allowed_document_types: list[str] = Field(default_factory=list)
-    taxonomy_item: dict[str, Any] | None = None
+    taxonomy_item: TaxonomyItem | None = None
     financial_account_id: int | None = None
     created_at: str | None = None
     updated_at: str | None = None

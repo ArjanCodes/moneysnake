@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pytest_mock import MockType
 
-from moneysnake import LedgerAccount, MoneybirdNotFoundError
+from moneysnake import LedgerAccount, MoneybirdNotFoundError, TaxonomyItem
 
 
 @pytest.fixture(name="ledger_account_data")
@@ -28,7 +28,18 @@ def fixture_ledger_account_data() -> dict[str, Any]:
 def test_list_all_makes_one_request(
     mocker: MockType, ledger_account_data: dict[str, Any]
 ):
-    second = {**ledger_account_data, "id": "502768552417166931", "name": "Costs"}
+    second = {
+        **ledger_account_data,
+        "id": "502768552417166931",
+        "name": "Costs",
+        "taxonomy_item": {
+            "taxonomy_version": "3.5",
+            "code": "WOmzAovEie",
+            "name": "Eiergeld",
+            "name_english": "Egg money",
+            "reference": "8008040",
+        },
+    }
     mock_get = mocker.patch(
         "moneysnake.ledger_account.http_get",
         return_value=[ledger_account_data, second],
@@ -45,6 +56,19 @@ def test_list_all_makes_one_request(
     assert accounts[0].allowed_document_types == ["sales_invoice"]
     assert accounts[0].taxonomy_item is None
     assert accounts[1].name == "Costs"
+    taxonomy_item = accounts[1].taxonomy_item
+    assert isinstance(taxonomy_item, TaxonomyItem)
+    assert taxonomy_item.taxonomy_version == "3.5"
+    assert taxonomy_item.code == "WOmzAovEie"
+    assert taxonomy_item.name == "Eiergeld"
+    assert taxonomy_item.name_english == "Egg money"
+    assert taxonomy_item.reference == "8008040"
+
+
+def test_missing_taxonomy_item_loads_as_none(ledger_account_data: dict[str, Any]):
+    data = {k: v for k, v in ledger_account_data.items() if k != "taxonomy_item"}
+
+    assert LedgerAccount(**data).taxonomy_item is None
 
 
 def test_list_all_sends_no_page_params(
