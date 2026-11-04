@@ -7,6 +7,7 @@ from moneysnake.external_sales_invoice import (
     ExternalSalesInvoice,
     ExternalSalesInvoiceDetailsAttribute,
 )
+from moneysnake.exceptions import MoneybirdNotFoundError
 from moneysnake.payment import Payment as ExternalSalesInvoicePayment
 
 
@@ -228,6 +229,31 @@ def test_delete_payment(
     invoice.delete_payment(433546259519768528)
 
     assert len(invoice.payments) == 0
+
+
+def test_delete_payment_without_loaded_payments(mocker: MockType):
+    mock_delete = mocker.patch("moneysnake.external_sales_invoice.http_delete")
+    invoice = ExternalSalesInvoice(id=433546254874576683, payments=None)
+
+    invoice.delete_payment(433546259519768528)
+
+    mock_delete.assert_called_once_with(
+        path="external_sales_invoices/433546254874576683/payments/433546259519768528"
+    )
+    assert invoice.payments is None
+
+
+def test_delete_payment_not_found_propagates(mocker: MockType):
+    mocker.patch(
+        "moneysnake.external_sales_invoice.http_delete",
+        side_effect=MoneybirdNotFoundError(
+            404, '{"error": "record not found"}', "DELETE", "payments/1"
+        ),
+    )
+    invoice = ExternalSalesInvoice(id=433546254874576683)
+
+    with pytest.raises(MoneybirdNotFoundError):
+        invoice.delete_payment(1)
 
 
 def test_list_all_by_contact_id(mocker: MockType, ext_invoice_data: dict[str, Any]):
