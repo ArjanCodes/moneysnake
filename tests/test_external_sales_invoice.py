@@ -431,6 +431,13 @@ def test_load_keeps_version(ext_invoice_data: dict[str, Any]):
     assert invoice.version == ext_invoice_data["version"]
 
 
+@pytest.mark.parametrize("price", [129.95, "10,95", 100])
+def test_detail_price_accepts_money_values(price: int | float | str):
+    detail = ExternalSalesInvoiceDetailsAttribute(description="Item", price=price)
+    assert detail.price == price
+    assert detail.model_dump()["price"] == price
+
+
 def test_detail_accepts_integer_ids():
     detail = ExternalSalesInvoiceDetailsAttribute(ledger_account_id=123, project_id=456)
     assert detail.ledger_account_id == 123

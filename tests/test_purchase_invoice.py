@@ -279,3 +279,10 @@ def test_details_converted_from_dicts(document_data: dict[str, Any]):
 
 def test_endpoint_name():
     assert PurchaseInvoice._endpoint_name() == "documents/purchase_invoice"
+
+
+@pytest.mark.parametrize("price", [129.95, "10,95", 100])
+def test_detail_price_accepts_money_values(price: int | float | str):
+    detail = DocumentDetailsAttribute(description="Item", price=price)
+    assert detail.price == price
+    assert detail.model_dump()["price"] == price
