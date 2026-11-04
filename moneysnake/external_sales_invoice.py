@@ -163,9 +163,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
             path=f"{self.endpoint}s/{self.id}/payments/{payment_id}",
         )
 
-        if not self.payments:
-            raise ValueError("No payments found.")
-
-        self.payments = [
-            payment for payment in self.payments if payment.id != payment_id
-        ]
+        if self.payments is not None:
+            self.payments = [
+                payment for payment in self.payments if payment.id != payment_id
+            ]
