@@ -6,15 +6,15 @@ authors = [{ name = "ArjanCodes" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["httpx>=0.28.1", "pydantic>=2.12.5"]
+dependencies = ["httpx>=0.28.1", "pydantic>=2.14.2"]
 
 [dependency-groups]
 dev = [
-    "mypy>=1.19.1",
+    "mypy>=2.4.1",
     "freezegun>=1.5.5",
-    "pytest-mock>=3.15.1",
-    "pytest>=9.0.2",
-    "types-pygments>=2.19.0.20251121",
+    "pytest-mock>=3.17.0",
+    "pytest>=9.2.0",
+    "types-pygments>=2.21.0.20260819",
 ]
 
 [build-system]
