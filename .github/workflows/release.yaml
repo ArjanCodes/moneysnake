@@ -20,7 +20,7 @@ jobs:
       suffix: ${{ steps.release.outputs.suffix }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Extract tag and Details
         id: release
@@ -70,10 +70,10 @@ jobs:
     needs: [details, check_pypi]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
 
@@ -112,4 +112,4 @@ jobs:
           path: dist/
 
       - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1.13
+        uses: pypa/gh-action-pypi-publish@release/v1.14
