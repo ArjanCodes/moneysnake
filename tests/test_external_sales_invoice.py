@@ -403,3 +403,33 @@ def test_load_converts_payments_to_objects(
 def test_load_keeps_version(ext_invoice_data: dict[str, Any]):
     invoice = ExternalSalesInvoice.model_validate(ext_invoice_data)
     assert invoice.version == ext_invoice_data["version"]
+
+
+def test_detail_accepts_integer_ids():
+    detail = ExternalSalesInvoiceDetailsAttribute(ledger_account_id=123, project_id=456)
+    assert detail.ledger_account_id == 123
+    assert detail.project_id == 456
+
+
+def test_detail_product_id_and_row_order_round_trip(
+    mocker: MockType, ext_invoice_data: dict[str, Any]
+):
+    ext_invoice_data["details"][0]["product_id"] = "433546254863042999"
+    ext_invoice_data["details"][0]["row_order"] = 3
+    mocker.patch("moneysnake.model.http_get", return_value=ext_invoice_data)
+
+    invoice = ExternalSalesInvoice.find_by_id(433546254874576683)
+
+    detail = invoice.details[0]
+    assert detail.product_id == "433546254863042999"
+    assert detail.row_order == 3
+
+    mock_patch = mocker.patch("moneysnake.external_sales_invoice.http_patch")
+    mock_patch.return_value = ext_invoice_data
+    invoice.save()
+
+    sent = mock_patch.call_args[1]["data"]["external_sales_invoice"][
+        "details_attributes"
+    ]
+    assert sent[0]["product_id"] == "433546254863042999"
+    assert sent[0]["row_order"] == 3
