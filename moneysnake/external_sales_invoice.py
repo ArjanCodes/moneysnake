@@ -18,8 +18,10 @@ class ExternalSalesInvoiceDetailsAttribute(Updatable):
     price: int | float | str | None = None
     amount: int | str | None = None
     tax_rate_id: int | None = None
-    ledger_account_id: str | None = None
-    project_id: str | None = None
+    ledger_account_id: int | str | None = None
+    project_id: int | str | None = None
+    product_id: int | str | None = None
+    row_order: int | None = None
 
 
 class ExternalSalesInvoice(Synchronizable, CrudModel):
@@ -161,9 +163,7 @@ class ExternalSalesInvoice(Synchronizable, CrudModel):
             path=f"{self.endpoint}s/{self.id}/payments/{payment_id}",
         )
 
-        if not self.payments:
-            raise ValueError("No payments found.")
-
-        self.payments = [
-            payment for payment in self.payments if payment.id != payment_id
-        ]
+        if self.payments is not None:
+            self.payments = [
+                payment for payment in self.payments if payment.id != payment_id
+            ]

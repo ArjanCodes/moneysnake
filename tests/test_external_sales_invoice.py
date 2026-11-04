@@ -7,6 +7,7 @@ from moneysnake.external_sales_invoice import (
     ExternalSalesInvoice,
     ExternalSalesInvoiceDetailsAttribute,
 )
+from moneysnake.exceptions import MoneybirdNotFoundError
 from moneysnake.payment import Payment as ExternalSalesInvoicePayment
 
 
@@ -230,6 +231,31 @@ def test_delete_payment(
     assert len(invoice.payments) == 0
 
 
+def test_delete_payment_without_loaded_payments(mocker: MockType):
+    mock_delete = mocker.patch("moneysnake.external_sales_invoice.http_delete")
+    invoice = ExternalSalesInvoice(id=433546254874576683, payments=None)
+
+    invoice.delete_payment(433546259519768528)
+
+    mock_delete.assert_called_once_with(
+        path="external_sales_invoices/433546254874576683/payments/433546259519768528"
+    )
+    assert invoice.payments is None
+
+
+def test_delete_payment_not_found_propagates(mocker: MockType):
+    mocker.patch(
+        "moneysnake.external_sales_invoice.http_delete",
+        side_effect=MoneybirdNotFoundError(
+            404, '{"error": "record not found"}', "DELETE", "payments/1"
+        ),
+    )
+    invoice = ExternalSalesInvoice(id=433546254874576683)
+
+    with pytest.raises(MoneybirdNotFoundError):
+        invoice.delete_payment(1)
+
+
 def test_list_all_by_contact_id(mocker: MockType, ext_invoice_data: dict[str, Any]):
     """
     Test listing all external sales invoices for a contact.
@@ -410,3 +436,33 @@ def test_detail_price_accepts_money_values(price: int | float | str):
     detail = ExternalSalesInvoiceDetailsAttribute(description="Item", price=price)
     assert detail.price == price
     assert detail.model_dump()["price"] == price
+
+
+def test_detail_accepts_integer_ids():
+    detail = ExternalSalesInvoiceDetailsAttribute(ledger_account_id=123, project_id=456)
+    assert detail.ledger_account_id == 123
+    assert detail.project_id == 456
+
+
+def test_detail_product_id_and_row_order_round_trip(
+    mocker: MockType, ext_invoice_data: dict[str, Any]
+):
+    ext_invoice_data["details"][0]["product_id"] = "433546254863042999"
+    ext_invoice_data["details"][0]["row_order"] = 3
+    mocker.patch("moneysnake.model.http_get", return_value=ext_invoice_data)
+
+    invoice = ExternalSalesInvoice.find_by_id(433546254874576683)
+
+    detail = invoice.details[0]
+    assert detail.product_id == "433546254863042999"
+    assert detail.row_order == 3
+
+    mock_patch = mocker.patch("moneysnake.external_sales_invoice.http_patch")
+    mock_patch.return_value = ext_invoice_data
+    invoice.save()
+
+    sent = mock_patch.call_args[1]["data"]["external_sales_invoice"][
+        "details_attributes"
+    ]
+    assert sent[0]["product_id"] == "433546254863042999"
+    assert sent[0]["row_order"] == 3

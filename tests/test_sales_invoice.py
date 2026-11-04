@@ -288,11 +288,24 @@ def test_create_payment(
     mocker: MockType, invoice_data: dict[str, Any], payment_data: dict[str, Any]
 ):
     mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
+    mock_post.return_value = payment_data
+    invoice = SalesInvoice(**invoice_data)
+    created = invoice.create_payment(Payment(**payment_data))
+    assert isinstance(created, Payment)
+    assert created.id == 433546310070568441
+    assert invoice.payments == [created]
+
+
+def test_create_payment_wrapped_response(
+    mocker: MockType, invoice_data: dict[str, Any], payment_data: dict[str, Any]
+):
+    mock_post = mocker.patch("moneysnake.sales_invoice.http_post")
     mock_post.return_value = {"payment": payment_data}
     invoice = SalesInvoice(**invoice_data)
-    invoice.create_payment(Payment(**payment_data))
-    assert len(invoice.payments) == 1
-    assert invoice.payments[0].id == 433546310070568441
+    created = invoice.create_payment(Payment(**payment_data))
+    assert isinstance(created, Payment)
+    assert created.id == 433546310070568441
+    assert invoice.payments == [created]
 
 
 def test_delete_payment(
