@@ -18,8 +18,10 @@ class ExternalSalesInvoiceDetailsAttribute(Updatable):
     price: int | str | None = None
     amount: int | str | None = None
     tax_rate_id: int | None = None
-    ledger_account_id: str | None = None
-    project_id: str | None = None
+    ledger_account_id: int | str | None = None
+    project_id: int | str | None = None
+    product_id: int | str | None = None
+    row_order: int | None = None
 
 
 class ExternalSalesInvoice(Synchronizable, CrudModel):
