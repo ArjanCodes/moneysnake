@@ -15,7 +15,7 @@ class ExternalSalesInvoiceDetailsAttribute(Updatable):
     id: int | None = None
     description: str | None = None
     period: str | None = None
-    price: int | str | None = None
+    price: int | float | str | None = None
     amount: int | str | None = None
     tax_rate_id: int | None = None
     ledger_account_id: str | None = None

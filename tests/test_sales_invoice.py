@@ -476,3 +476,10 @@ def test_save_with_custom_fields(mocker: MockType, invoice_data: dict[str, Any])
 def test_endpoint_is_sales_invoice():
     invoice = SalesInvoice()
     assert invoice.endpoint == "sales_invoice"
+
+
+@pytest.mark.parametrize("price", [129.95, "10,95", 100])
+def test_detail_price_accepts_money_values(price: int | float | str):
+    detail = SalesInvoiceDetailsAttribute(description="Item", price=price)
+    assert detail.price == price
+    assert detail.model_dump()["price"] == price
