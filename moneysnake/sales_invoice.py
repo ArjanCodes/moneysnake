@@ -148,15 +148,16 @@ class SalesInvoice(Synchronizable, CustomFieldModel):
 
     # --- Payment management ---
 
-    def create_payment(self, payment: Payment) -> None:
+    def create_payment(self, payment: Payment) -> Payment:
         """Register a payment for this sales invoice."""
         data = http_post(
             path=f"{self.endpoint}s/{self.id}/payments",
             data={"payment": payment.to_dict()},
         )
-        payment_data = data.get("payment")
-        if payment_data:
-            self.payments.append(Payment(**payment_data))
+        payload = data.get("payment", data) if isinstance(data, dict) else None
+        created = Payment(**payload) if payload else payment
+        self.payments.append(created)
+        return created
 
     def delete_payment(self, payment_id: int) -> None:
         """Delete a payment from this sales invoice."""
